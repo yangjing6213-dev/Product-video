@@ -1,0 +1,33 @@
+{
+  "id": "feature-focus.v1",
+  "version": "1.0.0",
+  "purpose": "Demonstrate one product feature and connect it to one user benefit.",
+  "whenToUse": ["A feature has a named benefit and evidence asset", "The feature can be understood in a short focused beat"],
+  "whenNotToUse": ["More than one feature must compete in the same scene", "The benefit is not supported by product evidence"],
+  "requiredInputs": ["one product.features item", "feature.evidenceAssetIds", "licensed matching asset", "brand motion tone"],
+  "recommendedDuration": { "minSec": 5, "targetSec": 6, "maxSec": 8 },
+  "layoutContract": {
+    "hierarchy": ["feature evidence", "feature name", "user benefit"],
+    "focus": "Crop or mask the evidence so the relevant control or result is prominent.",
+    "density": "One feature and one benefit per scene."
+  },
+  "motionContract": {
+    "entrance": "Introduce the evidence, move focus to the feature, then reveal the benefit.",
+    "determinism": "All highlights and camera moves use fixed coordinates and finite durations.",
+    "media": "Apply a subtle crop, pan, zoom, mask, or focus cue; do not leave a screenshot static for the whole scene."
+  },
+  "transitionOptions": [
+    { "type": "reveal", "use": "Carry the highlighted control into the next feature." },
+    { "type": "crossfade", "use": "Change between unrelated product surfaces." }
+  ],
+  "captionRules": {
+    "maxLines": 2,
+    "copy": "Prefer benefit language over interface labels already visible in the asset.",
+    "placement": "Do not cover the highlighted UI region."
+  },
+  "fallbacks": [
+    { "condition": "evidence asset is missing", "action": "Use a brand card only when the benefit is independently verified; otherwise omit the feature." },
+    { "condition": "screenshot is too small", "action": "Use a bounded crop at native quality and pair it with a brand card instead of enlarging beyond 2x." }
+  ],
+  "qaRules": ["Feature name and benefit map to the same input item", "Referenced evidence asset exists and has an allowed license", "Focal UI remains readable at delivery resolution"]
+}

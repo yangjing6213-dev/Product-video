@@ -1,0 +1,43 @@
+{
+  "id": "product-promo-45s.v1",
+  "version": "1.0.0",
+  "purpose": "Compose a 30–60 second product promotion around one problem, up to three evidenced benefits, and one CTA.",
+  "whenToUse": ["A concise product introduction or promotion is requested", "Enough verified product and brand material exists for five to eight scenes"],
+  "whenNotToUse": ["The request is general video editing, film generation, or a human-presenter replacement", "Critical product facts or asset rights are unresolved"],
+  "requiredInputs": ["validated product input", "DESIGN.md", "licensed asset manifest", "one primary problem", "up to three features or benefits", "one CTA"],
+  "recommendedDuration": { "minSec": 30, "targetSec": 45, "maxSec": 60 },
+  "layoutContract": {
+    "hierarchy": ["product result", "problem and response", "evidenced capabilities", "single CTA"],
+    "sceneCount": { "min": 5, "max": 8 },
+    "continuity": "Reuse verified brand tokens and stable safe areas while adapting layout to each product."
+  },
+  "motionContract": {
+    "entrance": "Every scene has a readable static composition before finite entrance motion is added.",
+    "determinism": "All timelines are paused and finite; random, wall-clock, and infinite-repeat behavior is forbidden.",
+    "transitions": "Every scene boundary uses an explicit supported transition or documented crossfade fallback."
+  },
+  "transitionOptions": [
+    { "type": "wipe", "use": "Use when shared geometry supports directional continuity." },
+    { "type": "reveal", "use": "Use for branded shape continuity." },
+    { "type": "crossfade", "use": "Use as the compatible fallback." }
+  ],
+  "captionRules": {
+    "maxLines": 2,
+    "copy": "Keep screen text shorter than narration and use the transcript as the only caption source when narration exists.",
+    "placement": "Reserve a consistent safe caption lane that does not cover product evidence or CTA."
+  },
+  "fallbacks": [
+    { "condition": "social proof is not sourced", "action": "Omit social-proof.v1 and allocate its time to evidenced feature or UI scenes." },
+    { "condition": "voice is unavailable", "action": "Use authorized external audio or narrationMode=none and retain concise on-screen copy." },
+    { "condition": "capture fails", "action": "Use supplied-assets and record the failure in the run report." }
+  ],
+  "qaRules": ["Product name or core result appears within three seconds", "Total duration is 30–60 seconds", "Five to eight scenes use one primary goal each", "No unknown-license asset reaches final", "Final output has one CTA and at most three core features"],
+  "sequence": [
+    { "slot": "opening", "recipe": "hero-hook.v1", "targetDurationSec": 4, "required": true },
+    { "slot": "problem", "recipe": "problem-solution.v1", "targetDurationSec": 8, "required": true },
+    { "slot": "feature-one", "recipe": "feature-focus.v1", "targetDurationSec": 8, "required": true },
+    { "slot": "proof-in-product", "recipe": "ui-walkthrough.v1", "targetDurationSec": 10, "required": true },
+    { "slot": "feature-two-or-comparison", "recipe": "feature-focus.v1", "alternative": "before-after.v1", "targetDurationSec": 9, "required": true },
+    { "slot": "close", "recipe": "cta.v1", "targetDurationSec": 6, "required": true }
+  ]
+}

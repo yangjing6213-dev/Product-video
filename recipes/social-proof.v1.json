@@ -1,0 +1,33 @@
+{
+  "id": "social-proof.v1",
+  "version": "1.0.0",
+  "purpose": "Present a sourced proof point that reduces uncertainty about the product.",
+  "whenToUse": ["A proof point has a traceable source", "The source permits its use in the video"],
+  "whenNotToUse": ["No reliable proof point is supplied", "A quote, metric, logo, award, or attribution cannot be verified"],
+  "requiredInputs": ["one product.proofPoints item", "source URL or owned source asset", "authorization record", "exact attribution"],
+  "recommendedDuration": { "minSec": 4, "targetSec": 5, "maxSec": 7 },
+  "layoutContract": {
+    "hierarchy": ["proof point", "source attribution", "supporting product context"],
+    "source": "Keep attribution readable and adjacent to the claim.",
+    "density": "Use one proof point per scene."
+  },
+  "motionContract": {
+    "entrance": "Reveal the claim and its attribution as a single unit.",
+    "determinism": "Use finite, paused animation with fixed values.",
+    "emphasis": "Emphasize only the exact verified fragment; do not animate a larger implied claim."
+  },
+  "transitionOptions": [
+    { "type": "reveal", "use": "Reveal a sourced metric or quote over product context." },
+    { "type": "crossfade", "use": "Move from evidence to the CTA without implying causation." }
+  ],
+  "captionRules": {
+    "maxLines": 2,
+    "copy": "Preserve the meaning and qualifiers of the source.",
+    "placement": "Do not separate a claim from its visible attribution."
+  },
+  "fallbacks": [
+    { "condition": "proof is absent, stale, or unverified", "action": "Skip the scene and redistribute time; never synthesize proof." },
+    { "condition": "third-party logo rights are unclear", "action": "Use text attribution if authorized, otherwise omit the proof point." }
+  ],
+  "qaRules": ["Every claim has a recorded source", "Wording retains source qualifiers", "Unknown-license imagery and unverified customer logos are absent"]
+}

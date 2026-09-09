@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://enhe.local/schemas/video-spec.schema.json",
+  "title": "EPVS Video Specification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "projectId", "recipeVersion", "promptVersions", "product", "brand", "output", "assets", "audio", "captions", "narrative", "scenes", "qa", "provenance"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "projectId": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/projectId" },
+    "recipeVersion": { "type": "string", "minLength": 1 },
+    "promptVersions": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "product": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/product" },
+    "brand": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/brand" },
+    "output": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/output" },
+    "assets": {
+      "type": "array",
+      "items": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/asset" }
+    },
+    "audio": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/audio" },
+    "captions": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/captions" },
+    "narrative": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coreMessage", "cta"],
+      "properties": {
+        "coreMessage": { "type": "string", "minLength": 1 },
+        "cta": { "type": "string", "minLength": 1 }
+      }
+    },
+    "scenes": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 8,
+      "items": { "$ref": "#/$defs/scene" }
+    },
+    "qa": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checks"],
+      "properties": {
+        "checks": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceUrls", "generatedAt"],
+      "properties": {
+        "sourceUrls": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "generatedAt": { "type": "string", "minLength": 1 }
+      }
+    }
+  },
+  "$defs": {
+    "scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "recipe", "goal", "plannedDurationSec", "actualStartSec", "actualEndSec", "voiceover", "onScreenText", "assetRefs", "compositionFile", "motionDirection", "transition", "fallback"],
+      "properties": {
+        "id": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/id" },
+        "recipe": { "type": "string", "minLength": 1 },
+        "goal": { "type": "string", "minLength": 1 },
+        "plannedDurationSec": { "type": "number", "exclusiveMinimum": 0 },
+        "actualStartSec": {
+          "anyOf": [
+            { "type": "number", "minimum": 0 },
+            { "type": "null" }
+          ]
+        },
+        "actualEndSec": {
+          "anyOf": [
+            { "type": "number", "minimum": 0 },
+            { "type": "null" }
+          ]
+        },
+        "voiceover": { "type": "string" },
+        "onScreenText": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "assetRefs": {
+          "type": "array",
+          "items": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/id" },
+          "uniqueItems": true
+        },
+        "compositionFile": { "type": "string", "minLength": 1 },
+        "motionDirection": { "type": "string" },
+        "transition": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "durationSec"],
+          "properties": {
+            "type": { "enum": ["wipe", "reveal", "crossfade", "shader"] },
+            "durationSec": { "type": "number", "minimum": 0 }
+          }
+        },
+        "fallback": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["onMissingAsset", "onUnsupportedEffect"],
+          "properties": {
+            "onMissingAsset": { "const": "use-brand-card" },
+            "onUnsupportedEffect": { "const": "use-css-reveal" }
+          }
+        },
+        "caption": { "type": "string" },
+        "heroFrameSec": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}

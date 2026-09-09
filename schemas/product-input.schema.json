@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://enhe.local/schemas/product-input.schema.json",
+  "title": "EPVS Product Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "projectId", "product", "brand", "assets", "output", "audio", "captions"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "projectId": { "$ref": "#/$defs/projectId" },
+    "product": { "$ref": "#/$defs/product" },
+    "brand": { "$ref": "#/$defs/brand" },
+    "assets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/asset" }
+    },
+    "output": { "$ref": "#/$defs/output" },
+    "audio": { "$ref": "#/$defs/audio" },
+    "captions": { "$ref": "#/$defs/captions" }
+  },
+  "$defs": {
+    "projectId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,79}$"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "feature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "benefit", "evidenceAssetIds"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "benefit": { "type": "string", "minLength": 1 },
+        "evidenceAssetIds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "product": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "url", "oneLiner", "targetAudience", "primaryProblem", "valueProposition", "features", "proofPoints", "cta"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "url": { "type": "string" },
+        "oneLiner": { "type": "string", "minLength": 1 },
+        "targetAudience": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "primaryProblem": { "type": "string", "minLength": 1 },
+        "valueProposition": { "type": "string", "minLength": 1 },
+        "features": {
+          "type": "array",
+          "maxItems": 3,
+          "items": { "$ref": "#/$defs/feature" }
+        },
+        "proofPoints": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "cta": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["label", "url"],
+          "properties": {
+            "label": { "type": "string", "minLength": 1 },
+            "url": { "type": "string" }
+          }
+        }
+      }
+    },
+    "brand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["logoAssetId", "colors", "fontFamilies", "motionTone", "canvas", "mustAvoid"],
+      "properties": {
+        "logoAssetId": { "type": "string" },
+        "colors": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 5,
+          "items": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$"
+          },
+          "uniqueItems": true
+        },
+        "fontFamilies": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "motionTone": { "type": "string", "minLength": 1 },
+        "canvas": { "enum": ["dark", "light"] },
+        "mustAvoid": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "path", "sourceUrl", "license", "required", "fallbackAssetId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "type": { "enum": ["logo", "screenshot", "screen-recording", "image", "audio", "font"] },
+        "path": { "type": "string", "minLength": 1 },
+        "sourceUrl": { "type": "string" },
+        "license": { "enum": ["owned", "authorized", "unknown"] },
+        "required": { "type": "boolean" },
+        "fallbackAssetId": {
+          "anyOf": [
+            { "$ref": "#/$defs/id" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["locale", "width", "height", "fps", "targetDurationSec", "quality"],
+      "properties": {
+        "locale": { "type": "string", "minLength": 1 },
+        "width": { "const": 1920 },
+        "height": { "const": 1080 },
+        "fps": { "const": 30 },
+        "targetDurationSec": { "type": "number", "minimum": 30, "maximum": 60 },
+        "quality": { "enum": ["draft", "standard", "high"] }
+      }
+    },
+    "audio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["narrationMode", "voice", "externalAudioAssetId", "musicAssetId"],
+      "properties": {
+        "narrationMode": { "enum": ["hyperframes", "external-audio", "none"] },
+        "voice": { "type": "string" },
+        "externalAudioAssetId": {
+          "anyOf": [
+            { "$ref": "#/$defs/id" },
+            { "type": "null" }
+          ]
+        },
+        "musicAssetId": {
+          "anyOf": [
+            { "$ref": "#/$defs/id" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "captions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "maxLines", "safeAreaPercent", "style"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "maxLines": { "type": "integer", "minimum": 1, "maximum": 2 },
+        "safeAreaPercent": { "type": "number", "minimum": 0, "exclusiveMaximum": 50 },
+        "style": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

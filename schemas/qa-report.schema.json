@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://enhe.local/schemas/qa-report.schema.json",
+  "title": "EPVS QA Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "projectId", "status", "generatedAt", "checks"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "projectId": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/projectId" },
+    "status": { "enum": ["PASS", "FAIL", "PARTIAL"] },
+    "generatedAt": { "type": "string", "minLength": 1 },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "message"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["PASS", "FAIL", "SKIPPED_WITH_REASON"] },
+          "message": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

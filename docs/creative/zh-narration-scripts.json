@@ -1,0 +1,282 @@
+{
+  "schemaVersion": "1.0",
+  "scriptVersion": "zh-narration.v1",
+  "generatedAt": "2026-09-09T19:10:16+08:00",
+  "language": "zh-CN",
+  "delivery": {
+    "tone": "克制、自然、清楚",
+    "targetTotalSpokenSec": "35–48",
+    "captionRule": "每条字幕建议最多两行；以下切段合并后与 voiceover 内容一致，最终时间以真实合成音频的分句样本数为准。",
+    "timingRule": "保留每幕开头与结尾的短呼吸，不要求声音填满整幕。"
+  },
+  "projects": [
+    {
+      "projectId": "enhe-ai-homepage",
+      "productName": "ENHE AI",
+      "sceneWindowsSec": [[0, 5], [5, 12], [12, 20], [20, 30], [30, 38], [38, 45]],
+      "estimatedTotalSpokenSec": 40.9,
+      "scenes": [
+        {
+          "projectId": "enhe-ai-homepage",
+          "sceneId": "scene-01",
+          "voiceover": "从真实任务出发，找到合适的人工智能工具。",
+          "estimatedSpokenSec": 4.6,
+          "captionSegments": [
+            { "text": "从真实任务出发，", "startSec": 0.3, "endSec": 2.3 },
+            { "text": "找到合适的人工智能工具。", "startSec": 2.3, "endSec": 4.7 }
+          ],
+          "pronunciationGuidance": [
+            "屏幕保留品牌名 ENHE AI；旁白不编造未核实的中文品牌名。",
+            "首句平稳介绍，不把产品名读成广告口号。"
+          ]
+        },
+        {
+          "projectId": "enhe-ai-homepage",
+          "sceneId": "scene-02",
+          "voiceover": "工具越多，下一步未必更清楚。先问：我现在到底要完成什么？",
+          "estimatedSpokenSec": 6.3,
+          "captionSegments": [
+            { "text": "工具越多，下一步未必更清楚。", "startSec": 5.3, "endSec": 8.5 },
+            { "text": "先问：我现在到底要完成什么？", "startSec": 8.5, "endSec": 11.7 }
+          ],
+          "pronunciationGuidance": [
+            "“先问”前留一个短停顿；末句只轻微上扬。"
+          ]
+        },
+        {
+          "projectId": "enhe-ai-homepage",
+          "sceneId": "scene-03",
+          "voiceover": "工作、创作、学习，或判断一条资讯。四类入口，对应四种真实需求。",
+          "estimatedSpokenSec": 7.3,
+          "captionSegments": [
+            { "text": "工作、创作、学习，", "startSec": 12.3, "endSec": 14.8 },
+            { "text": "或判断一条资讯。", "startSec": 14.8, "endSec": 16.8 },
+            { "text": "四类入口，对应四种真实需求。", "startSec": 16.8, "endSec": 19.7 }
+          ],
+          "pronunciationGuidance": [
+            "四类任务按同一节奏列举，不逐项重读屏幕标题。"
+          ]
+        },
+        {
+          "projectId": "enhe-ai-homepage",
+          "sceneId": "scene-04",
+          "voiceover": "选定任务，再沿公开页面进入工具、教程和内容路径。行动之前，也先看清使用边界。",
+          "estimatedSpokenSec": 9.2,
+          "captionSegments": [
+            { "text": "选定任务，再沿公开页面进入工具、教程和内容路径。", "startSec": 20.3, "endSec": 25.1 },
+            { "text": "行动之前，也先看清使用边界。", "startSec": 25.1, "endSec": 29.6 }
+          ],
+          "pronunciationGuidance": [
+            "“公开页面”自然带过；“使用边界”稍作强调。"
+          ]
+        },
+        {
+          "projectId": "enhe-ai-homepage",
+          "sceneId": "scene-05",
+          "voiceover": "核验来源、看清隐私边界，也考虑长期使用是否稳定。",
+          "estimatedSpokenSec": 6.7,
+          "captionSegments": [
+            { "text": "核验来源、看清隐私边界，", "startSec": 30.3, "endSec": 33.7 },
+            { "text": "也考虑长期使用是否稳定。", "startSec": 33.7, "endSec": 37.5 }
+          ],
+          "pronunciationGuidance": [
+            "三个判断点保持同等语气，不暗示绝对安全或稳定承诺。"
+          ]
+        },
+        {
+          "projectId": "enhe-ai-homepage",
+          "sceneId": "scene-06",
+          "voiceover": "访问 enhe-tech.com.cn，从手头的一件真实任务开始。",
+          "estimatedSpokenSec": 6.8,
+          "captionSegments": [
+            { "text": "访问 enhe-tech.com.cn，", "startSec": 38.3, "endSec": 41.7 },
+            { "text": "从手头的一件真实任务开始。", "startSec": 41.7, "endSec": 44.6 }
+          ],
+          "pronunciationGuidance": [
+            "网址建议读作“enhe 横杠 tech 点 com 点 cn”；若中文 TTS 不稳定，可只读“访问官网”，屏幕继续保留完整网址。",
+            "CTA 用邀请语气，不提高音量。"
+          ]
+        }
+      ]
+    },
+    {
+      "projectId": "cognitive-anchor-sketcher",
+      "productName": "Cognitive Anchor Sketcher",
+      "sceneWindowsSec": [[0, 5], [5, 12], [12, 20], [20, 30], [30, 38], [38, 45]],
+      "estimatedTotalSpokenSec": 42.2,
+      "scenes": [
+        {
+          "projectId": "cognitive-anchor-sketcher",
+          "sceneId": "scene-01",
+          "voiceover": "这是认知锚点绘图工具，把文章里的关键认知画出来。",
+          "estimatedSpokenSec": 4.7,
+          "captionSegments": [
+            { "text": "这是认知锚点绘图工具，", "startSec": 0.3, "endSec": 2.6 },
+            { "text": "把文章里的关键认知画出来。", "startSec": 2.6, "endSec": 4.7 }
+          ],
+          "pronunciationGuidance": [
+            "屏幕保留英文名；中文旁白用功能解释开场，避免五秒内生硬拼读长英文名。",
+            "如必须读英文名，Cognitive Anchor Sketcher 建议逐词慢读，随后删去“这是”以控制时长。"
+          ]
+        },
+        {
+          "projectId": "cognitive-anchor-sketcher",
+          "sceneId": "scene-02",
+          "voiceover": "不是每一段都需要配图。先找出真正改变理解的判断、动作或转折。",
+          "estimatedSpokenSec": 6.8,
+          "captionSegments": [
+            { "text": "不是每一段都需要配图。", "startSec": 5.3, "endSec": 8.0 },
+            { "text": "先找出真正改变理解的判断、动作或转折。", "startSec": 8.0, "endSec": 11.7 }
+          ],
+          "pronunciationGuidance": [
+            "“判断、动作或转折”连续列举，重音落在“改变理解”。"
+          ]
+        },
+        {
+          "projectId": "cognitive-anchor-sketcher",
+          "sceneId": "scene-03",
+          "voiceover": "再把抽象判断变成一个看得见的动作。一张图，只讲清一件事。",
+          "estimatedSpokenSec": 7.3,
+          "captionSegments": [
+            { "text": "再把抽象判断变成一个看得见的动作。", "startSec": 12.3, "endSec": 16.1 },
+            { "text": "一张图，只讲清一件事。", "startSec": 16.1, "endSec": 19.6 }
+          ],
+          "pronunciationGuidance": [
+            "“一张图”后短停，保持解释感，不读成口号。"
+          ]
+        },
+        {
+          "projectId": "cognitive-anchor-sketcher",
+          "sceneId": "scene-04",
+          "voiceover": "流程从文章输入开始，提取一个认知锚点，再写成画面清单，最后变成可见动作。",
+          "estimatedSpokenSec": 8.8,
+          "captionSegments": [
+            { "text": "流程从文章输入开始，提取一个认知锚点，", "startSec": 20.3, "endSec": 24.3 },
+            { "text": "再写成画面清单，", "startSec": 24.3, "endSec": 26.6 },
+            { "text": "最后变成可见动作。", "startSec": 26.6, "endSec": 29.6 }
+          ],
+          "pronunciationGuidance": [
+            "“认知锚点”读完整，不把“锚”弱化；三步之间各留短停。"
+          ]
+        },
+        {
+          "projectId": "cognitive-anchor-sketcher",
+          "sceneId": "scene-05",
+          "voiceover": "生成前，先确认方向、画风、知识产权和素材授权。参考图，不等于复制许可。",
+          "estimatedSpokenSec": 7.8,
+          "captionSegments": [
+            { "text": "生成前，先确认方向、画风、知识产权和素材授权。", "startSec": 30.3, "endSec": 34.9 },
+            { "text": "参考图，不等于复制许可。", "startSec": 34.9, "endSec": 37.6 }
+          ],
+          "pronunciationGuidance": [
+            "旁白使用“知识产权”而不是字母 IP，降低中文 TTS 歧义。",
+            "末句是边界提醒，语气平实。"
+          ]
+        },
+        {
+          "projectId": "cognitive-anchor-sketcher",
+          "sceneId": "scene-06",
+          "voiceover": "在 GitHub 查看这个项目，让每张图都和正文站在同一边。",
+          "estimatedSpokenSec": 6.8,
+          "captionSegments": [
+            { "text": "在 GitHub 查看这个项目，", "startSec": 38.3, "endSec": 41.2 },
+            { "text": "让每张图都和正文站在同一边。", "startSec": 41.2, "endSec": 44.6 }
+          ],
+          "pronunciationGuidance": [
+            "GitHub 建议读作“Git Hub”；若引擎读音异常，可替换为“代码仓库”，屏幕保留完整 URL。"
+          ]
+        }
+      ]
+    },
+    {
+      "projectId": "project-brand-studio",
+      "productName": "BrandLoom",
+      "sceneWindowsSec": [[0, 5], [5, 12], [12, 20], [20, 30], [30, 38], [38, 45]],
+      "estimatedTotalSpokenSec": 42.3,
+      "scenes": [
+        {
+          "projectId": "project-brand-studio",
+          "sceneId": "scene-01",
+          "voiceover": "BrandLoom，把品牌选择织成一套可追溯的流程。",
+          "estimatedSpokenSec": 4.8,
+          "captionSegments": [
+            { "text": "BrandLoom，", "startSec": 0.3, "endSec": 1.7 },
+            { "text": "把品牌选择织成一套可追溯的流程。", "startSec": 1.7, "endSec": 4.7 }
+          ],
+          "pronunciationGuidance": [
+            "BrandLoom 建议读作“Brand Loom”；中文 TTS 不稳定时可读作“布兰德卢姆”。",
+            "“织成”是对 Loom 名称的自然解释，不延伸为官方中文名。"
+          ]
+        },
+        {
+          "projectId": "project-brand-studio",
+          "sceneId": "scene-02",
+          "voiceover": "文案、字体、标志和授权各自散落，品牌决定就难以复用。",
+          "estimatedSpokenSec": 6.6,
+          "captionSegments": [
+            { "text": "文案、字体、标志和授权各自散落，", "startSec": 5.3, "endSec": 8.9 },
+            { "text": "品牌决定就难以复用。", "startSec": 8.9, "endSec": 11.7 }
+          ],
+          "pronunciationGuidance": [
+            "四项并列快速读过，重音放在“难以复用”。"
+          ]
+        },
+        {
+          "projectId": "project-brand-studio",
+          "sceneId": "scene-03",
+          "voiceover": "一次确认一个选择。只有条件全部就绪，才进入生成准备状态。",
+          "estimatedSpokenSec": 6.8,
+          "captionSegments": [
+            { "text": "一次确认一个选择。", "startSec": 12.3, "endSec": 15.0 },
+            { "text": "只有条件全部就绪，才进入生成准备状态。", "startSec": 15.0, "endSec": 19.7 }
+          ],
+          "pronunciationGuidance": [
+            "旁白用“生成准备状态”解释屏幕上的 GENERATION_READY，不拼读下划线。"
+          ]
+        },
+        {
+          "projectId": "project-brand-studio",
+          "sceneId": "scene-04",
+          "voiceover": "底图可以生成，再用确定性排版合成标志和关键文字，减少错字，也让版式更可控。",
+          "estimatedSpokenSec": 9.3,
+          "captionSegments": [
+            { "text": "底图可以生成，", "startSec": 20.3, "endSec": 22.3 },
+            { "text": "再用确定性排版合成标志和关键文字，", "startSec": 22.3, "endSec": 26.4 },
+            { "text": "减少错字，也让版式更可控。", "startSec": 26.4, "endSec": 29.6 }
+          ],
+          "pronunciationGuidance": [
+            "“确定性排版”按技术说明平读；不要暗示所有生成内容都完全无误。"
+          ]
+        },
+        {
+          "projectId": "project-brand-studio",
+          "sceneId": "scene-05",
+          "voiceover": "从原始标志到主视觉，几何不重绘。来源、哈希和授权范围，都留下记录。",
+          "estimatedSpokenSec": 8.0,
+          "captionSegments": [
+            { "text": "从原始标志到主视觉，几何不重绘。", "startSec": 30.3, "endSec": 34.2 },
+            { "text": "来源、哈希和授权范围，都留下记录。", "startSec": 34.2, "endSec": 37.6 }
+          ],
+          "pronunciationGuidance": [
+            "“哈希”按中文技术用语读，不拼读英文 hash。",
+            "“几何不重绘”描述当前示例约束，不读成对所有素材的普遍承诺。"
+          ]
+        },
+        {
+          "projectId": "project-brand-studio",
+          "sceneId": "scene-06",
+          "voiceover": "到 GitHub 查看项目，让下一次品牌输出继续沿用这些决定。",
+          "estimatedSpokenSec": 6.8,
+          "captionSegments": [
+            { "text": "到 GitHub 查看项目，", "startSec": 38.3, "endSec": 41.0 },
+            { "text": "让下一次品牌输出继续沿用这些决定。", "startSec": 41.0, "endSec": 44.6 }
+          ],
+          "pronunciationGuidance": [
+            "GitHub 建议读作“Git Hub”；若引擎读音异常，可替换为“代码仓库”。",
+            "CTA 平稳收束，不重复朗读屏幕上的完整 URL。"
+          ]
+        }
+      ]
+    }
+  ]
+}

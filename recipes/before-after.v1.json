@@ -1,0 +1,33 @@
+{
+  "id": "before-after.v1",
+  "version": "1.0.0",
+  "purpose": "Compare a verified prior workflow with the product-enabled workflow without inventing performance claims.",
+  "whenToUse": ["Both workflows can be represented from verified facts", "The contrast makes the product value easier to understand"],
+  "whenNotToUse": ["The before state would be a straw man", "The comparison depends on unsourced time, cost, or quality numbers"],
+  "requiredInputs": ["product.primaryProblem", "product.valueProposition", "before-state evidence or neutral diagram", "after-state product evidence"],
+  "recommendedDuration": { "minSec": 6, "targetSec": 7, "maxSec": 9 },
+  "layoutContract": {
+    "hierarchy": ["before label and evidence", "after label and evidence", "single verified difference"],
+    "comparison": "Use matched scale, framing, and visual weight for both states.",
+    "density": "Compare one workflow dimension only."
+  },
+  "motionContract": {
+    "entrance": "Establish the before state, then reveal the after state with one continuous axis.",
+    "determinism": "Use fixed states and a finite transition.",
+    "continuity": "Hold the final comparison long enough to read both labels."
+  },
+  "transitionOptions": [
+    { "type": "wipe", "use": "Reveal the after state across a matched split." },
+    { "type": "crossfade", "use": "Use for full-frame states that cannot share a split." }
+  ],
+  "captionRules": {
+    "maxLines": 2,
+    "copy": "Describe the verified difference without numerical improvement unless its source is recorded.",
+    "placement": "Use one shared caption lane outside both comparison panels."
+  },
+  "fallbacks": [
+    { "condition": "before-state imagery is unavailable", "action": "Use a neutral process diagram based on the verified primary problem." },
+    { "condition": "the contrast cannot be evidenced", "action": "Replace this scene with feature-focus.v1." }
+  ],
+  "qaRules": ["Both states use comparable framing", "Any quantitative comparison has a provenance source", "The after state shows a real product capability"]
+}

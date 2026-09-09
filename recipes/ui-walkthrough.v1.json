@@ -1,0 +1,33 @@
+{
+  "id": "ui-walkthrough.v1",
+  "version": "1.0.0",
+  "purpose": "Show a real, short product interaction using an authorized screenshot sequence or screen recording.",
+  "whenToUse": ["A real product surface demonstrates the value", "The action can be shown without exposing private data"],
+  "whenNotToUse": ["Only a mock interface is available", "The source contains credentials, personal data, or access-controlled content"],
+  "requiredInputs": ["licensed screenshot or screen-recording asset", "verified action and result", "focal region", "brand safe area"],
+  "recommendedDuration": { "minSec": 6, "targetSec": 8, "maxSec": 10 },
+  "layoutContract": {
+    "hierarchy": ["real UI", "current action", "visible result"],
+    "framing": "Use a window or device frame only when it improves comprehension.",
+    "readability": "Crop to the task and preserve native pixel detail."
+  },
+  "motionContract": {
+    "entrance": "Settle the UI before adding cursor, highlight, crop, pan, or zoom cues.",
+    "determinism": "Use fixed interaction points and finite timelines; never simulate unsourced UI state.",
+    "media": "Screen video stays muted and playsinline; audio is handled on its own track."
+  },
+  "transitionOptions": [
+    { "type": "wipe", "use": "Follow the direction of the demonstrated action." },
+    { "type": "crossfade", "use": "Move from the product result to a benefit statement." }
+  ],
+  "captionRules": {
+    "maxLines": 2,
+    "copy": "Explain why the action matters instead of transcribing visible interface labels.",
+    "placement": "Reserve a caption lane that never covers the cursor path or result."
+  },
+  "fallbacks": [
+    { "condition": "screen recording is unavailable", "action": "Use an authorized screenshot with a bounded pan, crop, and highlight sequence." },
+    { "condition": "UI is unreadable at 1080p", "action": "Split the action across focused crops or replace it with a verified brand card." }
+  ],
+  "qaRules": ["The action and result are visible without invented UI", "No private or secret data is exposed", "Text and controls remain readable at 1920x1080"]
+}

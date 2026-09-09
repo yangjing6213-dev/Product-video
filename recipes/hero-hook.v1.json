@@ -1,0 +1,33 @@
+{
+  "id": "hero-hook.v1",
+  "version": "1.0.0",
+  "purpose": "Name the product and make one evidenced outcome clear within the first three seconds.",
+  "whenToUse": ["Open a product introduction", "A product name and defensible one-line result are available"],
+  "whenNotToUse": ["The product identity is unknown", "The proposed result cannot be supported by the input or captured assets"],
+  "requiredInputs": ["product.name", "product.oneLiner or product.valueProposition", "brand.colors", "one licensed logo or product visual"],
+  "recommendedDuration": { "minSec": 3, "targetSec": 4, "maxSec": 5 },
+  "layoutContract": {
+    "hierarchy": ["product identity", "single outcome", "supporting product visual"],
+    "safeArea": "Keep identity and outcome inside the configured safe area; preserve logo clear space.",
+    "density": "Use one headline and at most one supporting line."
+  },
+  "motionContract": {
+    "entrance": "Reveal the product identity first, then the outcome and product visual.",
+    "determinism": "Use a paused finite timeline with no random or clock-dependent values.",
+    "continuity": "Hold a readable hero frame before leaving the scene."
+  },
+  "transitionOptions": [
+    { "type": "reveal", "use": "Carry a brand shape into the problem scene." },
+    { "type": "crossfade", "use": "Use when the next scene has unrelated geometry." }
+  ],
+  "captionRules": {
+    "maxLines": 2,
+    "copy": "Keep captions shorter than narration and avoid repeating the complete headline.",
+    "placement": "Keep clear of the product name, logo, and focal UI."
+  },
+  "fallbacks": [
+    { "condition": "logo is missing or too small", "action": "Use a typographic product-name card with verified brand colors." },
+    { "condition": "result wording is unsupported", "action": "Replace it with the verified one-line product description." }
+  ],
+  "qaRules": ["Product name or core result is readable by 00:03", "No unsupported metric or testimonial appears", "Headline remains readable at 1920x1080"]
+}

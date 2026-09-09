@@ -1,0 +1,33 @@
+{
+  "id": "cta.v1",
+  "version": "1.0.0",
+  "purpose": "Close with one clear, truthful action tied to the verified product destination.",
+  "whenToUse": ["Close a product promotion", "A verified CTA label and destination are available"],
+  "whenNotToUse": ["The destination is unknown or inaccessible", "The call to action implies an unsupported offer or urgency"],
+  "requiredInputs": ["product.cta.label", "product.cta.url", "product.name", "licensed logo or typographic identity"],
+  "recommendedDuration": { "minSec": 4, "targetSec": 5, "maxSec": 7 },
+  "layoutContract": {
+    "hierarchy": ["product identity", "single CTA", "verified destination"],
+    "focus": "Keep one action dominant and remove competing feature copy.",
+    "safeArea": "Keep CTA and destination inside the configured safe area."
+  },
+  "motionContract": {
+    "entrance": "Resolve prior motion into a stable brand frame, then reveal the CTA.",
+    "determinism": "Use a finite entrance and hold; do not loop or pulse indefinitely.",
+    "ending": "Keep visible content through the final frame to avoid a blank tail."
+  },
+  "transitionOptions": [
+    { "type": "reveal", "use": "Use a brand shape carried from the prior scene." },
+    { "type": "crossfade", "use": "Use when returning to the hero identity." }
+  ],
+  "captionRules": {
+    "maxLines": 2,
+    "copy": "Use the exact CTA label; avoid adding urgency or an offer that is not in the input.",
+    "placement": "Keep captions separate from the CTA control and URL."
+  },
+  "fallbacks": [
+    { "condition": "logo is unavailable", "action": "Use product name as the brand lockup." },
+    { "condition": "CTA URL is not verified", "action": "Use the verified product homepage or stop before final render if no destination exists." }
+  ],
+  "qaRules": ["Exactly one primary CTA is visible", "CTA destination matches product input", "CTA remains readable through the final frame"]
+}

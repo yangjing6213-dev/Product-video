@@ -1,0 +1,33 @@
+{
+  "id": "problem-solution.v1",
+  "version": "1.0.0",
+  "purpose": "Connect one verified audience problem to the product's primary value proposition.",
+  "whenToUse": ["The input identifies a concrete primary problem", "The product can visibly demonstrate a simpler or better path"],
+  "whenNotToUse": ["The problem is speculative", "The scene would require fear-based or unverifiable claims"],
+  "requiredInputs": ["product.primaryProblem", "product.valueProposition", "product.targetAudience", "an evidenced product or workflow visual"],
+  "recommendedDuration": { "minSec": 5, "targetSec": 7, "maxSec": 9 },
+  "layoutContract": {
+    "hierarchy": ["problem state", "change cue", "solution state"],
+    "comparison": "Give both states equal visual weight until the solution is introduced.",
+    "density": "Show one problem and one response only."
+  },
+  "motionContract": {
+    "entrance": "Establish the problem, then transform or replace it with the product-supported solution.",
+    "determinism": "Use finite, paused animation timelines.",
+    "continuity": "Use a shared object, line, or crop to make the causal relationship legible."
+  },
+  "transitionOptions": [
+    { "type": "wipe", "use": "Separate before and solution states with directional continuity." },
+    { "type": "reveal", "use": "Reveal the product response over the established problem." }
+  ],
+  "captionRules": {
+    "maxLines": 2,
+    "copy": "State the problem plainly; do not exaggerate harm or promise certainty.",
+    "placement": "Keep captions outside the before/solution comparison axis."
+  },
+  "fallbacks": [
+    { "condition": "no visual proof of the old workflow", "action": "Use a neutral diagram built from the verified primary-problem wording." },
+    { "condition": "solution screenshot is unavailable", "action": "Use a branded value-proposition card and record the missing evidence." }
+  ],
+  "qaRules": ["Problem and solution are distinguishable without narration", "Exactly one primary problem is presented", "The solution language maps to a verified product fact"]
+}

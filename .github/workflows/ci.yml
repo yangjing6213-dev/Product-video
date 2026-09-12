@@ -29,7 +29,7 @@ jobs:
       HF_NO_BROWSER: '1'
       EPVS_TEST_CJK_FONT: Source Han Sans CN
       EPVS_TEST_CJK_FONT_PATH: ${{ github.workspace }}/.tools/ci-font/SourceHanSansCN-Regular.otf
-      EPVS_BROWSER_TEST_REPORTS: ${{ runner.temp }}/epvs-browser-checks
+      EPVS_BROWSER_TEST_REPORTS: ${{ github.workspace }}/reports/ci/browser-checks
     steps:
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

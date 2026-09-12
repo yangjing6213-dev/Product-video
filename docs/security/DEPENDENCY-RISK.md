@@ -2,21 +2,32 @@
 
 ## Current disposition
 
-The dependency audit remains **FAIL**. This record does not suppress or replace
-`npm audit`, and it does not claim that the vulnerability is fixed.
+On 2026-09-13, the project updated only the transitive `adm-zip` resolution from
+0.6.0 to 0.6.1 within HyperFrames' existing `^0.6.0` range. Direct dependencies,
+HyperFrames 0.8.33, and its CLI bundle are unchanged; no override is used.
+The upstream [0.6.1 release](https://github.com/cthackers/adm-zip/releases/tag/v0.6.1)
+published on September 11 reports a fix for extraction through symlinks inside
+the target directory. Local regression tests verify that all three affected
+APIs reject a pre-existing destination junction without modifying the file
+outside the extraction root, while ordinary extraction still succeeds.
 
-On 2026-09-09, GitHub's reviewed advisory
+The real `npm audit --json` changed from **FAIL** (exit 1 before the update) to
+**PASS** (exit 0, zero reported vulnerabilities after the update). This is a
+dated scanner result, not a guarantee against future advisories. Neither this
+document nor the consistency check suppresses or replaces `npm audit`.
+
+At this review, GitHub's advisory
 [GHSA-vwc7-r8mq-g2x9](https://github.com/advisories/GHSA-vwc7-r8mq-g2x9)
-listed `adm-zip` versions 0.5.9 through 0.6.0 as affected and listed no patched
-version. The [npm package versions](https://www.npmjs.com/package/adm-zip?activeTab=versions)
-listed 0.6.0 as the latest release. This project therefore cannot resolve the
-finding by selecting an available fixed `adm-zip` version.
+still listed versions 0.5.9 through 0.6.0 as affected and “None” under patched
+versions (last updated September 8). The patch disposition relies on the later
+upstream release, the installed source, actual filesystem regressions, and the
+fresh scanner result; it does not claim the advisory page has been updated.
 
 The installed and locked dependency chain reviewed here is:
 
 - `hyperframes@0.8.33`
 - HyperFrames dependency declaration `adm-zip: ^0.6.0`
-- resolved `adm-zip@0.6.0`
+- resolved and installed `adm-zip@0.6.1`
 - `node_modules/hyperframes/dist/cli.js` SHA-256
   `af57f08331c602ce6b5903945bc2b55a565d6b1ab839a26a0fcefbfa620d033f`
 
@@ -30,7 +41,14 @@ The advisory applies when `extractAllTo`, `extractAllToAsync`, or
 destination and overwrite is enabled. This can overwrite a file outside the
 intended extraction root.
 
-The reviewed HyperFrames CLI bundle contains two `adm-zip` uses:
+The reviewed HyperFrames CLI bundle imports the external `adm-zip` package
+at line 145382 and dynamically imports the same package at line 205444.
+Resolution from the CLI's location reaches the updated top-level installed
+package. Inspection found no embedded old `adm-zip` implementation or nested
+lockfile resolution. Therefore the patch applies to these runtime imports;
+changing the lockfile has not rewritten the HyperFrames bundle.
+
+The bundle contains two `adm-zip` uses:
 
 - lines 145699–145707 build a publication archive in memory using `addFile`,
   `getEntries`, and `toBuffer`;
@@ -52,23 +70,24 @@ Run:
 npm run check:dependency-risk
 ```
 
-The check returns `PASS_WITH_DOCUMENTED_RISK` only when the lockfile and both
+The check returns `PASS_REVIEWED_PATCH` only when the lockfile and both
 installed package manifests match the exact reviewed versions, both the locked
 and installed dependency ranges and HyperFrames CLI bundle SHA-256 still match, and none of the three
 affected API calls appears in the bundle. It returns
 `REVIEW_REQUIRED` for version or bundle drift and for a detected affected call.
-This check preserves `rawNpmAuditExpectedToPass: false`; it is not a replacement
-for an advisory scanner or a vulnerability fix.
+It reports `rawNpmAuditStatus: NOT_RUN` because this command does not execute
+the scanner; the independent `npm audit` command and its exit code must still
+be recorded. The patch comes from the dependency upgrade, not this check.
 
 ## Required controls and re-evaluation triggers
 
-- Do not add an application feature that extracts untrusted ZIP content to a
-  filesystem destination while this dependency remains affected.
+- Do not treat the patch as a filesystem sandbox. New extraction features need
+  their own review of destination ownership, concurrent changes, and trust boundaries.
 - Re-run `npm audit` and this check immediately before release.
 - Re-evaluate when HyperFrames, `adm-zip`, the lockfile resolution, or the
   HyperFrames CLI bundle changes.
 - Re-evaluate if HyperFrames adds any disk extraction call, including a dynamic
   or aliased call that a name scan may not detect.
-- Prefer an upstream patched release once one exists and compatibility has been
-  validated through the full test, lint, typecheck, HyperFrames, and media QA
-  gates. Do not force a dependency override without that compatibility evidence.
+- Validate upstream patch compatibility through the full test, lint, typecheck,
+  HyperFrames, and media QA gates. Do not force a dependency override without
+  compatibility evidence.

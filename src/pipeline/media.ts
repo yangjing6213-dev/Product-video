@@ -4,6 +4,7 @@ import type { VideoSpec, CheckResult } from '../contracts.ts';
 import { checkMedia } from '../qa/checks.ts';
 import { command, environment, ensureSuccess, recordCommand } from './tools.ts';
 import { atomicJson } from './stage-state.ts';
+import { verifyFinalAudioBinding } from '../qa/audio-binding.ts';
 
 export async function probeMedia(file: string, project: string, reportLabel = 'ffprobe') {
   const env = await environment();
@@ -23,6 +24,7 @@ export async function verifyMedia(file: string, project: string, spec: VideoSpec
   checks.push({ id: 'black-frames', status: /black_start:/.test(result.stderr) ? 'FAIL' : 'PASS', message: 'FFmpeg blackdetect: no black segment >=0.5s required' });
   const narration = spec.audio.narrationMode !== 'none';
   checks.push({ id: 'silence', status: !hasAudio || !narration ? 'SKIPPED_WITH_REASON' : /silence_start:/.test(result.stderr) ? 'FAIL' : 'PASS', message: narration ? 'Narration must have no unexpected silence >=2s' : 'No narration; silence is intentional' });
+  checks.push(await verifyFinalAudioBinding(file, project, spec));
   return checks;
 }
 

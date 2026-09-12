@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import { readFile, writeFile } from 'node:fs/promises';
 import type { CheckResult, VideoSpec } from '../contracts.ts';
 import { validateQaReport } from '../contracts.ts';
@@ -8,7 +9,13 @@ import { warningChecks, type CliFinding, type WarningReview } from '../qa/warnin
 import { atomicJson, exists } from './stage-state.ts';
 import { digest } from './stage-state.ts';
 import { ensureSuccess, filesUnder, hyperframes, recordCommand } from './tools.ts';
-import { checkNarrationComposition, validateNarrationCues, validatePhraseTranscript, validateTranscriptTiming } from '../qa/narration.ts';
+import { checkNarrationComposition, validateCurrentNarrationEvidence, validateNarrationCues, validatePhraseTranscript, validateTranscriptTiming } from '../qa/narration.ts';
+import { assertApprovedTranscript } from '../quality/copy.ts';
+import { checkGeneratorSpec } from '../quality/policy.ts';
+import { isActiveGeneratorPolicy } from '../quality/policy.ts';
+import { assertGeneratorSnapshot } from './generator.ts';
+import { loadQwenEvidence } from '../qa/qwen-narration.ts';
+import { narrationEvidenceContext } from './voice-reuse.ts';
 
 export async function writeQa(project: string, spec: VideoSpec, checks: CheckResult[], warnings: string[] = []): Promise<string> {
   warnings = [...new Set([...warnings, ...checks.filter(c => c.id.includes('.warning.') || c.id.endsWith('.deprecation')).map(c => c.message)])];
@@ -20,7 +27,10 @@ export async function writeQa(project: string, spec: VideoSpec, checks: CheckRes
   return file;
 }
 export async function sourceChecks(project: string, spec: VideoSpec): Promise<CheckResult[]> {
-  const checks = [...checkSpec(spec), ...await checkAssets({ ...spec }, project)];
+  const expectedPolicy = spec.generatorPolicy && !isActiveGeneratorPolicy(spec.generatorPolicy)
+    ? await assertGeneratorSnapshot(project)
+    : undefined;
+  const checks = [...checkSpec(spec), ...await checkAssets({ ...spec }, project), ...checkGeneratorSpec(spec, expectedPolicy)];
   const html = (await filesUnder(project)).filter(f => (f === path.join(project, 'index.html') || f.startsWith(path.join(project, 'compositions') + path.sep)) && f.endsWith('.html'));
   const sources = await Promise.all(html.map(file => readFile(file, 'utf8')));
   const combined = sources.join('\n');
@@ -51,19 +61,38 @@ export async function sourceChecks(project: string, spec: VideoSpec): Promise<Ch
         throw new Error('Voice report does not bind the current narration audio and transcript');
       }
       const transcript = validateTranscriptTiming(JSON.parse(transcriptBytes.toString('utf8')) as unknown, durationSec);
+      const approvedCopy = await assertApprovedTranscript(path.resolve(project, '../..'), project, spec, transcript);
       const cueFile = path.join(project, 'reports/narration-cues.json');
       const cueBytes = await exists(cueFile) ? await readFile(cueFile) : null;
       const cues = cueBytes
         ? validateNarrationCues(JSON.parse(cueBytes.toString('utf8')) as unknown, spec, digest(audioBytes), durationSec)
         : null;
+      if (isActiveGeneratorPolicy(spec.generatorPolicy) && !cues) throw new Error('Current narration requires bound provider or ASR cue evidence; a transcript alone does not prove ASR ran');
       if (cues) {
+        const cueEvidence = JSON.parse(cueBytes!.toString('utf8')) as unknown;
         validatePhraseTranscript(transcript, cues);
+        const timingBytes = cues.timingEvidence ? await readFile(path.join(project, cues.timingEvidence.path)) : null;
+        if (cues.timingEvidence && digest(timingBytes!) !== cues.timingEvidence.sha256) throw new Error('Provider timing evidence hash changed');
+        const generationFile = path.join(project, 'reports/tts-generation.json');
+        const qwenFiles = await loadQwenEvidence(project, spec, cueEvidence);
+        const context = await narrationEvidenceContext(project, spec, approvedCopy.copySha256);
+        validateCurrentNarrationEvidence(cueEvidence, context.spec, {
+          generation: await exists(generationFile) ? JSON.parse(await readFile(generationFile, 'utf8')) as unknown : undefined,
+          providerTiming: timingBytes ? JSON.parse(timingBytes.toString('utf8')) as unknown : undefined,
+          expectedCopySha256: context.copySha256,
+          expectedScriptSha256: context.scriptSha256,
+          qwenFiles,
+        });
+        if (qwenFiles && (report.asrTextMatch !== qwenFiles.alignment.lexicalMatch
+            || !isDeepStrictEqual(report.asrOmittedDiscourseTokens, qwenFiles.alignment.omittedDiscourseTokens ?? []))) {
+          throw new Error('Voice report must retain the documented ASR text difference review');
+        }
         if (
           report.cuesSha256 !== digest(cueBytes!) ||
-          report.timingSource !== 'tts-segment-duration' ||
+          report.timingSource !== cues.timingSource ||
           report.transcriptGranularity !== 'phrase' ||
-          report.transcriptSource !== 'measured-tts-segments' ||
-          report.asrStatus !== 'NOT_RUN'
+          report.transcriptSource !== (cues.timingSource === 'whisper-cpp-asr' ? 'whisper-cpp-phrase-alignment' : cues.timingSource === 'provider-phoneme-timing' ? 'provider-phoneme-sentence-alignment' : 'measured-tts-segments') ||
+          report.asrStatus !== (cues.timingSource === 'whisper-cpp-asr' ? 'PASS' : 'NOT_RUN')
         ) throw new Error('Voice report does not bind or truthfully describe measured phrase cues');
       } else if (
         report.timingSource !== 'whisper-cpp-asr' ||
@@ -73,7 +102,9 @@ export async function sourceChecks(project: string, spec: VideoSpec): Promise<Ch
       ) {
         throw new Error('Voice report does not identify its word-level ASR evidence');
       }
-      checks.push({ id: 'narration.evidence', status: 'PASS', message: cues ? 'Audio, phrase cues and normalized phrase transcript are hash-bound and valid' : 'Audio and ASR transcript are hash-bound and valid' });
+      checks.push({ id: 'narration.evidence', status: 'PASS', message: report.asrTextMatch
+        ? `Audio and actual ASR phrase boundaries are hash-bound; text comparison: ${report.asrTextMatch}. Any model-reviewed discourse omission remains explicit and is not a human transcript approval.`
+        : cues ? 'Audio, phrase cues and normalized phrase transcript are hash-bound and valid' : 'Audio and ASR transcript are hash-bound and valid' });
       checks.push(...checkNarrationComposition(combined, spec, cues, durationSec, transcript));
     } catch (error) {
       checks.push({ id: 'narration.evidence', status: 'FAIL', message: error instanceof Error ? error.message : String(error) });

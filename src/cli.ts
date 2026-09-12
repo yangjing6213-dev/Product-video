@@ -3,12 +3,15 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { pathToFileURL } from 'node:url';
 import type { CheckResult } from './contracts.ts';
-import { initialize, inputFor, projectPath, specFor } from './pipeline/project.ts';
+import { initialize, inputFor, projectPath, specFor, verifyProjectBrand } from './pipeline/project.ts';
 import { captureProject, preflight, renderProject, runProject, STAGE_CONTRACT_VERSIONS } from './pipeline/run.ts';
 import { compositionQa, writeQa } from './pipeline/qa.ts';
 import { requireCreative } from './pipeline/gates.ts';
 import { hashFiles, runStage } from './pipeline/stage-state.ts';
 import { filesUnder, redact } from './pipeline/tools.ts';
+import { composeProject, generatorReleaseStatus, synthesizeProjectVoice } from './pipeline/generator.ts';
+import { qwenEvidenceInputs } from './qa/qwen-narration.ts';
+import { voiceReuseEvidenceInputs } from './pipeline/voice-reuse.ts';
 
 async function cachedPreflight(project: string, resume: boolean): Promise<string[]> {
   const input = await inputFor(project);
@@ -59,6 +62,8 @@ async function cachedQa(project: string, resume: boolean): Promise<CheckResult[]
           .filter(existsSync)
       : []),
     ...(existsSync(warningReview) ? [warningReview] : []),
+    ...await qwenEvidenceInputs(project, spec),
+    ...await voiceReuseEvidenceInputs(project),
   ]);
   const execute = async () => {
     const checks = await compositionQa(project, spec);
@@ -81,25 +86,40 @@ async function cachedQa(project: string, resume: boolean): Promise<CheckResult[]
 
 export async function main(args: string[]): Promise<void> {
   const { values, positionals } = parseArgs({ args, allowPositionals: true, options: {
+    'project-root': { type: 'string' },
+    'reuse-from': { type: 'string' },
     input: { type: 'string' }, project: { type: 'string' }, quality: { type: 'string', default: 'draft' }, resume: { type: 'boolean', default: false }, json: { type: 'boolean', default: true }, 'supplied-only': { type: 'boolean', default: false },
   } });
   const action = positionals[0];
-  if (!action || action === 'help') { console.log('video init --input FILE | capture|verify-input|qa|render|run --project ID [--resume] [--supplied-only]'); return; }
+  if (!action || action === 'help') { console.log('video init --input FILE | voice|compose|capture|verify-input|qa|render|run|release-check --project ID [--quality draft|high] [--resume] [--supplied-only] | voice --project ID --reuse-from SOURCE_ID'); return; }
+  if (values['reuse-from'] && action !== 'voice') throw new Error('--reuse-from is only available for the explicit voice command');
   if (action === 'init') {
     if (!values.input) throw new Error('--input is required');
-    console.log(JSON.stringify({ status: 'PASS', project: await initialize(values.input) })); return;
+    console.log(JSON.stringify({ status: 'PASS', project: await initialize(values.input, values['project-root']) })); return;
   }
   if (!values.project) throw new Error('--project is required');
-  const project = projectPath(values.project);
+  const project = projectPath(values.project, values['project-root']);
+  await verifyProjectBrand(project);
   let result: unknown;
   switch (action) {
+    case 'voice': result = await synthesizeProjectVoice(project, values['reuse-from']); break;
+    case 'compose': result = await composeProject(project); break;
+    case 'release-check': {
+      result = await generatorReleaseStatus(project);
+      const status = (result as { status: string }).status;
+      console.log(JSON.stringify({ status, projectId: values.project, result }));
+      if (status !== 'PASS') process.exitCode = 1;
+      return;
+    }
     case 'verify-input': result = await cachedPreflight(project, values.resume); break;
     case 'capture': result = await cachedCapture(project, values.resume, values['supplied-only']); break;
     case 'qa': result = await cachedQa(project, values.resume); break;
     case 'render':
       if (!['draft', 'high'].includes(values.quality)) throw new Error('--quality must be draft or high');
       result = await renderProject(project, values.quality as 'draft' | 'high', values.resume); break;
-    case 'run': result = await runProject(project, values.resume, values['supplied-only']); break;
+    case 'run':
+      if (!['draft', 'high'].includes(values.quality)) throw new Error('--quality must be draft or high');
+      result = await runProject(project, values.resume, values['supplied-only'], values.quality as 'draft' | 'high'); break;
     default: throw new Error(`Unknown command: ${action}`);
   }
   console.log(JSON.stringify({ status: 'PASS', projectId: values.project, result }));

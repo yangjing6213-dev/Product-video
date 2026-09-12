@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 export const REVIEWED_DEPENDENCY_RISK = Object.freeze({
   advisory: 'GHSA-vwc7-r8mq-g2x9',
   hyperframesVersion: '0.8.33',
-  admZipVersion: '0.6.0',
+  admZipVersion: '0.6.1',
   admZipRange: '^0.6.0',
   hyperframesCliSha256: 'af57f08331c602ce6b5903945bc2b55a565d6b1ab839a26a0fcefbfa620d033f',
   affectedApis: ['extractAllTo', 'extractAllToAsync', 'extractEntryTo'],
@@ -58,7 +58,7 @@ export function assessDependencyRisk({ packageLock, hyperframesPackage, admZipPa
 
   return {
     advisory: REVIEWED_DEPENDENCY_RISK.advisory,
-    status: reasons.length ? 'REVIEW_REQUIRED' : 'PASS_WITH_DOCUMENTED_RISK',
+    status: reasons.length ? 'REVIEW_REQUIRED' : 'PASS_REVIEWED_PATCH',
     reviewedVersions: { hyperframes, admZip },
     installedVersions: { hyperframes: installedHyperframes, admZip: installedAdmZip },
     lockedDependencyRange,
@@ -66,8 +66,8 @@ export function assessDependencyRisk({ packageLock, hyperframesPackage, admZipPa
     bundleSha256,
     expectedBundleSha256: REVIEWED_DEPENDENCY_RISK.hyperframesCliSha256,
     detectedAffectedApiCalls,
-    rawNpmAuditExpectedToPass: false,
-    scope: 'Evidence-consistency gate only; not a runtime sandbox or vulnerability fix.',
+    rawNpmAuditStatus: 'NOT_RUN',
+    scope: 'Reviewed patch and bundle-consistency gate only; npm audit must run separately. Not a runtime sandbox.',
     reasons,
   };
 }
@@ -90,7 +90,7 @@ export async function checkInstalledDependencyRisk(repositoryRoot = process.cwd(
 async function main() {
   const result = await checkInstalledDependencyRisk();
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-  if (result.status !== 'PASS_WITH_DOCUMENTED_RISK') process.exitCode = 1;
+  if (result.status !== 'PASS_REVIEWED_PATCH') process.exitCode = 1;
 }
 
 const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : '';

@@ -7,7 +7,7 @@
 ## 边界
 
 - Node.js 24.15+、TypeScript ESM、JSON Schema、固定依赖版本；HyperFrames 固定为 `0.8.33`。
-- 输出目标为 30–60 秒、1920×1080、30fps，默认 45 秒。
+- 当前规格支持 8–90 秒、1920×1080 横屏或 1080×1920 竖屏、30fps；具体时长按批准文案和实测旁白确定。
 - 只使用自有或明确授权素材。`license=unknown` 素材不能进入 final。
 - 本 MVP 不接入付费 API、ElevenLabs、Captions AI、Remotion、数据库、云基础设施或自动发布。
 - 当前支持 Windows x64；其他平台尚未完成本地工具链验证。
@@ -42,13 +42,13 @@ npm run video -- render --project <projectId> --quality high --resume
 npm run video -- run --project <projectId> --resume
 ```
 
-当前 CLI 使用位置参数 `help`，不支持 `--help`。直接 `render` 只接受 `draft` 或 `high`；`run` 按顺序执行 draft 和 high。默认 capture 调用仓库内 HyperFrames `capture`，失败后自动回退到已提供素材；`--supplied-only` 跳过 URL capture。
+当前 CLI 使用位置参数 `help`，不支持 `--help`。直接 `render` 只接受 `draft` 或 `high`；当前活动规则任务的 `run` 默认只输出 draft；显式 `--quality high` 还要求当前计划的实际人工视觉和声音批准。未绑定生成规则的历史任务保留原 draft→high 行为。默认 capture 调用仓库内 HyperFrames `capture`，失败后自动回退到已提供素材；`--supplied-only` 跳过 URL capture。
 
 `verify-input`、`capture`、`qa`、`render` 和 `run` 都支持 `--resume` 阶段复用；`init` 对完全相同的输入天然幂等，无需该标志。只有指纹一致且所有登记输出仍存在、字节哈希未改变时才会命中缓存，否则对应阶段重跑。以当次 `run-state.json`、`reports/run-history.json` 和 `reports/*.json` 为准；`run-history.json` 保留首次可播放 draft 时间，不因重渲染覆盖。失败必须返回非零退出码，控制台和报告使用 JSON，且不得包含密钥、Cookie 或完整环境变量。
 
 创意生成与修复请从仓库内 [ENHE Product Video Skill](skills/enhe-product-video/SKILL.md) 开始。该 Skill 尚未安装到全局目录，也不能由 CLI 递归调用。
 
-中文旁白使用仓库内 Kokoro v1.1-zh 后端和预设普通话女声，流程见 [本地中文旁白](docs/guides/CHINESE-TTS.md)。新版本放在独立的 `-zh` 项目目录；每条同时提供旁白 WAV、画面内同步字幕和 SRT。字幕起止时间来自实际合成音频样本，精度为分句级。原无声版保留。
+中文旁白先确认完整文案，再按显式 `voiceProfile` 选择已配置的本地 Kokoro 或 Qwen 参考声音分支；已有批准录音优先校验复用，不自动换声或重新试听。Qwen 使用实际 Whisper DTW 对齐，Kokoro 使用模型时序，输出 WAV、透明画面字幕与 SRT；流程与私有配置前提见[本地中文旁白](docs/guides/CHINESE-TTS.md)。
 
 ## Skill 使用
 
@@ -71,7 +71,7 @@ npm test
 
 项目当前没有配置 coverage 命令或覆盖率阈值。运行时由 Node.js 直接执行 TypeScript ESM，因此没有单独的编译 build 步骤；`npm run typecheck` 只检查类型，不生成构建产物。
 
-当前存在已公开的 `adm-zip` 间接依赖告警。`check:dependency-risk` 只核验已审查的版本和代码是否变化，不会修复漏洞，也不替代 `npm audit`；处置依据和限制见 [依赖风险说明](docs/security/DEPENDENCY-RISK.md)。
+已将 `adm-zip` 间接依赖锁定到修复目标目录链接写穿问题的 `0.6.1`，HyperFrames 保持 `0.8.33`。`check:dependency-risk` 核验已审查的补丁版本和代码，不替代每次发布前的 `npm audit`；验证结果和限制见 [依赖风险说明](docs/security/DEPENDENCY-RISK.md)。
 
 贡献方式见 [CONTRIBUTING.md](CONTRIBUTING.md)，安全问题报告边界见 [SECURITY.md](SECURITY.md)。
 

@@ -31,6 +31,8 @@ npm run typecheck
 npm test
 ```
 
+Browser tests require an installed Chrome executable (`HYPERFRAMES_BROWSER_PATH`) and a system Chinese font. The layout/workflow fixtures default to Microsoft YaHei on Windows; set `EPVS_TEST_CJK_FONT` to another installed, licensed CJK font family when needed. Missing fonts fail with setup instructions rather than accepting fallback or skipping assertions; private brand images and font binaries are not required by these fixtures.
+
 The project does not currently configure coverage tooling or a coverage threshold. It also has no separate compilation build step because Node.js executes the TypeScript ESM sources directly. Do not report coverage or build as passing; record them as not configured or not applicable.
 
 For video or pipeline changes, also run the relevant HyperFrames lint, validate, inspect, render, and media checks described in the repository guides. Include only real command and report evidence.

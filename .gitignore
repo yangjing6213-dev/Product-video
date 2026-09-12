@@ -46,3 +46,16 @@ reports/git-status.txt
 /POST-PUBLISH-REPORT.md
 /UPDATE-REPORT.md
 /DEPENDABOT-REPORT.md
+
+# Private brand library and local licensed font binaries; public rights docs only.
+/assets/brand/enhe/*
+!/assets/brand/enhe/ASSET-RIGHTS.md
+!/assets/brand/enhe/ip/
+/assets/brand/enhe/ip/*
+!/assets/brand/enhe/ip/README.md
+/assets/fonts/
+/docs/creative/quality-r2/
+/docs/creative/quality-r2-feedback-20260910/
+/assets/scenes/
+/IP形象素材包/
+/assets/audio/

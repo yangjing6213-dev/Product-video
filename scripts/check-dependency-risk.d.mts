@@ -14,7 +14,7 @@ export interface DependencyRiskInput {
 
 export interface DependencyRiskResult {
   advisory: string;
-  status: 'PASS_WITH_DOCUMENTED_RISK' | 'REVIEW_REQUIRED';
+  status: 'PASS_REVIEWED_PATCH' | 'REVIEW_REQUIRED';
   reviewedVersions: { hyperframes?: string; admZip?: string };
   installedVersions: { hyperframes?: string; admZip?: string };
   lockedDependencyRange?: string;
@@ -22,7 +22,7 @@ export interface DependencyRiskResult {
   bundleSha256: string;
   expectedBundleSha256: string;
   detectedAffectedApiCalls: string[];
-  rawNpmAuditExpectedToPass: false;
+  rawNpmAuditStatus: 'NOT_RUN';
   scope: string;
   reasons: string[];
 }

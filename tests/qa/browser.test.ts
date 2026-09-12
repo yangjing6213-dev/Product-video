@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { browserQa } from '../../src/qa/browser.ts';
 import { environment } from '../../src/pipeline/tools.ts';
+import { ACTIVE_GENERATOR_POLICY } from '../../src/quality/policy.ts';
 import { validVideoSpec } from '../fixtures/input.ts';
 
 test('real browser rejects layout and brand counterexamples', async t => {
@@ -171,4 +172,135 @@ test('real browser audits every narrated caption cue through forward and reverse
       assert.equal(check(checks, 'browser.narration.cue-0.midpoint'), 'FAIL');
     });
   } finally { await rm(project, { recursive: true, force: true }); }
+});
+
+test('real browser strictly audits a whole author poster ending without legacy overlays', async t => {
+  const env = await environment();
+  if (!env.HYPERFRAMES_BROWSER_PATH || !await access(env.HYPERFRAMES_BROWSER_PATH).then(() => true, () => false)) {
+    t.skip('Local Chrome is required for the author poster regression suite'); return;
+  }
+  const project = await mkdtemp(path.join(tmpdir(), 'epvs-browser-author-poster-'));
+  const spec = structuredClone(validVideoSpec);
+  const scene = spec.scenes[0]!;
+  spec.projectId = 'author-poster-browser-fixture';
+  spec.generatorPolicy = structuredClone(ACTIVE_GENERATOR_POLICY);
+  spec.brand = { ...spec.brand, colors:['#000000', '#FFFFFF', '#0000FF'], fontFamilies:['Microsoft YaHei', 'Segoe UI'] };
+  spec.authorContacts = { name:'Fixture Author', items:[
+    { label:'GitHub', value:'fixture' }, { label:'X / Twitter', value:'@fixture' },
+    { label:'网站', value:'fixture.test' }, { label:'微信', value:'Fixture' },
+    { label:'邮箱', value:'fixture@example.test' },
+  ] };
+  spec.audio = { narrationMode:'none', voice:'', externalAudioAssetId:null, musicAssetId:null };
+  spec.captions = { enabled:false, maxLines:2, safeAreaPercent:6, style:'transparent' };
+  spec.assets = [{ id:'author-poster', type:'image', path:'assets/author-poster.svg', sourceUrl:'owned-test-fixture', license:'owned', required:true, fallbackAssetId:null, width:1500, height:1000 }];
+  Object.assign(scene, {
+    id:'ending', authorPosterAssetId:'author-poster', recipe:'feature.v1', goal:'Read the whole author poster',
+    plannedDurationSec:8, actualStartSec:0, actualEndSec:8, voiceover:'', caption:'',
+    onScreenText:['Text is reviewed in the supplied poster image'], assetRefs:['author-poster'], compositionFile:'index.html',
+    motionDirection:'stable', heroFrameSec:4, transition:{ type:'crossfade', durationSec:.35 },
+    action:{ intent:'Read the supplied author poster', primitive:'reading-hold', subject:{ assetId:'author-poster' }, beforeState:'Readable', afterState:'Still readable', startFrame:0, endFrame:1, holdFrames:239 },
+  });
+  spec.scenes = [scene];
+
+  const render = async (options: {
+    foregroundFit?: 'contain' | 'cover'; foregroundDataId?: string; backgroundSrc?: string;
+    foregroundInset?: string; backgroundFit?: 'cover' | 'contain'; backgroundFilter?: string; overlay?: string; globalOverlay?: string; priorCta?: 'valid' | 'missing';
+  } = {}) => {
+    const width = spec.output.width, height = spec.output.height;
+    const foregroundFit = options.foregroundFit ?? 'contain';
+    const foregroundDataId = options.foregroundDataId ?? 'author-poster';
+    const backgroundSrc = options.backgroundSrc ?? 'assets/author-poster.svg';
+    const foregroundInset = options.foregroundInset ?? '0';
+    const backgroundFit = options.backgroundFit ?? 'cover';
+    const backgroundFilter = options.backgroundFilter ?? 'blur(32px) brightness(.55)';
+    const priorScene = spec.scenes.find(item => !item.authorPosterAssetId);
+    const prior = priorScene ? `<div id="${priorScene.id}" class="scene"><img class="logo" data-asset-id="brand-logo" src="assets/logo.svg" alt="Brand"><h2>Product evidence</h2>${options.priorCta === 'missing' ? '' : `<p class="primary-cta">${ACTIVE_GENERATOR_POLICY.marketing.screenAction}</p><p class="display-domain">${ACTIVE_GENERATOR_POLICY.marketing.displayDomain}</p>`}</div>` : '';
+    await writeFile(path.join(project, 'index.html'), `<!doctype html><meta charset="utf-8"><style>
+      *{box-sizing:border-box}html,body{margin:0;width:${width}px;height:${height}px;overflow:hidden}body{background:#000000}
+      .scene{position:absolute;inset:0;overflow:hidden;opacity:1;background:#000000}
+      .logo{position:absolute;left:150px;top:130px;width:80px;height:50px}h2{position:absolute;left:150px;top:240px;font-size:80px}.primary-cta{position:absolute;left:150px;top:410px;font-size:52px}.display-domain{position:absolute;left:150px;top:500px;font-size:42px}
+      .author-poster-image,.author-poster-background{position:absolute;inset:0;width:100%;height:100%;object-position:center}
+      .author-poster-background{object-fit:${backgroundFit};filter:${backgroundFilter};transform:scale(1.06)}
+      .author-poster-image{object-fit:${foregroundFit};inset:${foregroundInset}}
+    </style>${prior}<section class="clip scene-clip"><div id="ending" class="scene author-poster-scene" data-author-poster-asset-id="author-poster" data-scene-goal="Read the whole author poster">
+      <img id="ending-poster-background" class="clip author-poster-background" data-background-asset-id="author-poster" src="${backgroundSrc}" alt="" aria-hidden="true">
+      <img id="ending-poster" class="clip author-poster-image" data-asset-id="${foregroundDataId}" src="assets/author-poster.svg" alt="作者完整海报">
+      ${options.overlay ?? ''}
+    </div></section>${options.globalOverlay ?? ''}<script>window.__timelines={main:{seek(){}}}</script>`);
+    return browserQa(project, spec);
+  };
+  const check = (checks: Awaited<ReturnType<typeof render>>, suffix: string) => checks.find(item => item.id === `browser.ending.${suffix}`)?.status;
+  const posterChecks = ['poster-asset-binding', 'poster-images-loaded', 'poster-geometry', 'poster-full-image', 'poster-background', 'poster-no-overlays', 'poster-reading-hold'];
+  try {
+    await mkdir(path.join(project, 'assets'));
+    await writeFile(path.join(project, 'assets/author-poster.svg'), '<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1000" viewBox="0 0 1500 1000"><rect width="1500" height="1000" fill="#fff"/><text x="100" y="500" font-size="80">Whole author poster</text></svg>');
+
+    await t.test('landscape and portrait poster scenes pass only the scoped whole-poster contract', async () => {
+      for (const [width, height] of [[1920, 1080], [1080, 1920]] as const) {
+        spec.output = { ...spec.output, width, height, targetDurationSec:8 };
+        const checks = await render();
+        assert.deepEqual(checks.filter(item => item.status === 'FAIL'), [], JSON.stringify(checks.filter(item => item.status === 'FAIL')));
+        for (const id of posterChecks) assert.equal(check(checks, id), 'PASS', `${width}x${height} ${id}`);
+        for (const legacy of ['primary-cta', 'author-contacts', 'contact-reading-time']) assert.equal(check(checks, legacy), undefined, legacy);
+      }
+    });
+
+    await t.test('cropping the supplied foreground or adding old ending DOM fails', async () => {
+      spec.output = { ...spec.output, width:1920, height:1080, targetDurationSec:8 };
+      const checks = await render({ foregroundFit:'cover', overlay:'<div class="contact-block">Legacy contact overlay</div>' });
+      assert.equal(check(checks, 'poster-full-image'), 'FAIL');
+      assert.equal(check(checks, 'poster-no-overlays'), 'FAIL');
+    });
+
+    await t.test('a visible global caption without scene metadata still fails the poster overlay check', async () => {
+      const checks = await render({ globalOverlay:'<p class="caption" style="position:absolute;left:100px;top:100px;font-size:42px;color:#fff">Unexpected caption</p>' });
+      assert.equal(check(checks, 'poster-no-overlays'), 'FAIL');
+    });
+
+    await t.test('wrong binding, unloaded background and inset foreground fail independently', async () => {
+      const checks = await render({ foregroundDataId:'other-poster', backgroundSrc:'assets/missing.svg', foregroundInset:'10px' });
+      assert.equal(check(checks, 'poster-asset-binding'), 'FAIL');
+      assert.equal(check(checks, 'poster-images-loaded'), 'FAIL');
+      assert.equal(check(checks, 'poster-geometry'), 'FAIL');
+    });
+
+    await t.test('unblurred contain background and a moving action cannot pass as a reading poster', async () => {
+      scene.action = { ...scene.action!, primitive:'state-change' };
+      const checks = await render({ backgroundFit:'contain', backgroundFilter:'none' });
+      assert.equal(check(checks, 'poster-background'), 'FAIL');
+      assert.equal(check(checks, 'poster-reading-hold'), 'FAIL');
+      scene.action = { ...scene.action, primitive:'reading-hold' };
+    });
+
+    await t.test('a whole author poster shorter than six seconds fails its reading hold', async () => {
+      Object.assign(scene, { plannedDurationSec:5, actualStartSec:0, actualEndSec:5, heroFrameSec:2.5,
+        action:{ ...scene.action!, endFrame:1, holdFrames:149 } });
+      spec.output = { ...spec.output, width:1920, height:1080, targetDurationSec:5 };
+      assert.equal(check(await render(), 'poster-reading-hold'), 'FAIL');
+      Object.assign(scene, { plannedDurationSec:8, actualStartSec:0, actualEndSec:8, heroFrameSec:4,
+        action:{ ...scene.action!, endFrame:1, holdFrames:239 } });
+      spec.output = { ...spec.output, targetDurationSec:8 };
+    });
+
+    await t.test('a multi-scene film keeps the approved CTA on its last non-poster scene', async () => {
+      const productScene = structuredClone(validVideoSpec.scenes[0]!);
+      Object.assign(productScene, {
+        id:'product', plannedDurationSec:8, actualStartSec:0, actualEndSec:8, voiceover:'', caption:'', assetRefs:['brand-logo'], heroFrameSec:4,
+        action:{ intent:'Read product evidence', primitive:'reading-hold', subject:{ assetId:'brand-logo' }, beforeState:'Readable', afterState:'Still readable', startFrame:0, endFrame:1, holdFrames:239 },
+      });
+      Object.assign(scene, { actualStartSec:8, actualEndSec:16, heroFrameSec:12 });
+      spec.output = { ...spec.output, width:1920, height:1080, targetDurationSec:16 };
+      spec.assets = [
+        { id:'brand-logo', type:'logo', path:'assets/logo.svg', sourceUrl:'owned-test-fixture', license:'owned', required:true, fallbackAssetId:null },
+        { id:'author-poster', type:'image', path:'assets/author-poster.svg', sourceUrl:'owned-test-fixture', license:'owned', required:true, fallbackAssetId:null, width:1500, height:1000 },
+      ];
+      spec.scenes = [productScene, scene];
+      await writeFile(path.join(project, 'assets/logo.svg'), '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="50"><rect width="80" height="50" fill="#fff"/></svg>');
+      const valid = await render({ priorCta:'valid' });
+      assert.equal(valid.find(item => item.id === 'browser.product.primary-cta')?.status, 'PASS');
+      assert.equal(valid.find(item => item.id === 'browser.product.author-contacts'), undefined);
+      const missing = await render({ priorCta:'missing' });
+      assert.equal(missing.find(item => item.id === 'browser.product.primary-cta')?.status, 'FAIL');
+    });
+  } finally { await rm(project, { recursive:true, force:true }); }
 });

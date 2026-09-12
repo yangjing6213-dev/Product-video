@@ -4,21 +4,102 @@
   "title": "EPVS Product Input",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "projectId", "product", "brand", "assets", "output", "audio", "captions"],
+  "required": [
+    "schemaVersion",
+    "projectId",
+    "product",
+    "brand",
+    "assets",
+    "output",
+    "audio",
+    "captions"
+  ],
   "properties": {
-    "schemaVersion": { "const": "1.0" },
-    "projectId": { "$ref": "#/$defs/projectId" },
-    "product": { "$ref": "#/$defs/product" },
-    "brand": { "$ref": "#/$defs/brand" },
+    "brandLibrary": {
+      "$ref": "#/$defs/brandLibrary"
+    },
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "projectId": {
+      "$ref": "#/$defs/projectId"
+    },
+    "product": {
+      "$ref": "#/$defs/product"
+    },
+    "brand": {
+      "$ref": "#/$defs/brand"
+    },
     "assets": {
       "type": "array",
-      "items": { "$ref": "#/$defs/asset" }
+      "items": {
+        "$ref": "#/$defs/asset"
+      }
     },
-    "output": { "$ref": "#/$defs/output" },
-    "audio": { "$ref": "#/$defs/audio" },
-    "captions": { "$ref": "#/$defs/captions" }
+    "output": {
+      "$ref": "#/$defs/output"
+    },
+    "audio": {
+      "$ref": "#/$defs/audio"
+    },
+    "captions": {
+      "$ref": "#/$defs/captions"
+    },
+    "generatorPolicy": {
+      "$ref": "#/$defs/generatorPolicy"
+    },
+    "authorContacts": {
+      "$ref": "#/$defs/authorContacts"
+    }
   },
   "$defs": {
+    "pixelRegion": {
+      "type": "array", "minItems": 4, "maxItems": 4,
+      "items": { "type": "number", "minimum": 0 }
+    },
+    "brandLibrary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "selections"
+      ],
+      "properties": {
+        "omissionReason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "selections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "assetId",
+              "contentVersion",
+              "sha256",
+              "purpose"
+            ],
+            "properties": {
+              "assetId": {
+                "$ref": "#/$defs/id"
+              },
+              "contentVersion": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
     "projectId": {
       "type": "string",
       "pattern": "^[a-z0-9][a-z0-9-]{0,79}$"
@@ -31,13 +112,25 @@
     "feature": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "benefit", "evidenceAssetIds"],
+      "required": [
+        "name",
+        "benefit",
+        "evidenceAssetIds"
+      ],
       "properties": {
-        "name": { "type": "string", "minLength": 1 },
-        "benefit": { "type": "string", "minLength": 1 },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "benefit": {
+          "type": "string",
+          "minLength": 1
+        },
         "evidenceAssetIds": {
           "type": "array",
-          "items": { "$ref": "#/$defs/id" },
+          "items": {
+            "$ref": "#/$defs/id"
+          },
           "uniqueItems": true
         }
       }
@@ -45,35 +138,104 @@
     "product": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "url", "oneLiner", "targetAudience", "primaryProblem", "valueProposition", "features", "proofPoints", "cta"],
+      "required": [
+        "name",
+        "url",
+        "oneLiner",
+        "targetAudience",
+        "primaryProblem",
+        "valueProposition",
+        "features",
+        "proofPoints",
+        "cta"
+      ],
       "properties": {
-        "name": { "type": "string", "minLength": 1 },
-        "url": { "type": "string" },
-        "oneLiner": { "type": "string", "minLength": 1 },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string"
+        },
+        "oneLiner": {
+          "type": "string",
+          "minLength": 1
+        },
         "targetAudience": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 },
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
           "uniqueItems": true
         },
-        "primaryProblem": { "type": "string", "minLength": 1 },
-        "valueProposition": { "type": "string", "minLength": 1 },
+        "primaryProblem": {
+          "type": "string",
+          "minLength": 1
+        },
+        "valueProposition": {
+          "type": "string",
+          "minLength": 1
+        },
         "features": {
           "type": "array",
           "maxItems": 3,
-          "items": { "$ref": "#/$defs/feature" }
+          "items": {
+            "$ref": "#/$defs/feature"
+          }
         },
         "proofPoints": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 },
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
           "uniqueItems": true
         },
         "cta": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["label", "url"],
+          "required": [
+            "label",
+            "url"
+          ],
           "properties": {
-            "label": { "type": "string", "minLength": 1 },
-            "url": { "type": "string" }
+            "label": {
+              "type": "string",
+              "minLength": 1
+            },
+            "url": {
+              "type": "string"
+            }
+          }
+        },
+        "form": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prerequisites": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "example": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "explanation"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "explanation": {
+              "type": "string",
+              "minLength": 1
+            }
           }
         }
       }
@@ -81,9 +243,18 @@
     "brand": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["logoAssetId", "colors", "fontFamilies", "motionTone", "canvas", "mustAvoid"],
+      "required": [
+        "logoAssetId",
+        "colors",
+        "fontFamilies",
+        "motionTone",
+        "canvas",
+        "mustAvoid"
+      ],
       "properties": {
-        "logoAssetId": { "type": "string" },
+        "logoAssetId": {
+          "type": "string"
+        },
         "colors": {
           "type": "array",
           "minItems": 3,
@@ -98,14 +269,36 @@
           "type": "array",
           "minItems": 1,
           "maxItems": 2,
-          "items": { "type": "string", "minLength": 1 },
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
           "uniqueItems": true
         },
-        "motionTone": { "type": "string", "minLength": 1 },
-        "canvas": { "enum": ["dark", "light"] },
+        "motionTone": {
+          "type": "string",
+          "minLength": 1
+        },
+        "presentation": {
+          "enum": [
+            "workflow"
+          ]
+        },
+        "visualStyle": {
+          "enum": ["editorial-v1", "editorial-v2"]
+        },
+        "canvas": {
+          "enum": [
+            "dark",
+            "light"
+          ]
+        },
         "mustAvoid": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 },
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
           "uniqueItems": true
         }
       }
@@ -113,66 +306,595 @@
     "asset": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "type", "path", "sourceUrl", "license", "required", "fallbackAssetId"],
+      "required": [
+        "id",
+        "type",
+        "path",
+        "sourceUrl",
+        "license",
+        "required",
+        "fallbackAssetId"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "type": { "enum": ["logo", "screenshot", "screen-recording", "image", "audio", "font"] },
-        "path": { "type": "string", "minLength": 1 },
-        "sourceUrl": { "type": "string" },
-        "license": { "enum": ["owned", "authorized", "unknown"] },
-        "required": { "type": "boolean" },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "enum": [
+            "logo",
+            "screenshot",
+            "screen-recording",
+            "image",
+            "audio",
+            "font"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceUrl": {
+          "type": "string"
+        },
+        "license": {
+          "enum": [
+            "owned",
+            "authorized",
+            "unknown"
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        },
         "fallbackAssetId": {
           "anyOf": [
-            { "$ref": "#/$defs/id" },
-            { "type": "null" }
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
           ]
+        },
+        "fontFamily": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fontWeight": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 900
+        },
+        "authorRegions": {
+          "type": "object", "additionalProperties": false,
+          "required": ["portrait", "information"],
+          "properties": {
+            "portrait": { "$ref": "#/$defs/pixelRegion" },
+            "information": { "$ref": "#/$defs/pixelRegion" }
+          }
+        },
+        "layers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "assetId",
+              "bounds",
+              "role"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "assetId": {
+                "$ref": "#/$defs/id"
+              },
+              "bounds": {
+                "type": "array",
+                "minItems": 4,
+                "maxItems": 4,
+                "items": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "role": {
+                "enum": [
+                  "base",
+                  "title",
+                  "logo",
+                  "subtitle",
+                  "value-line"
+                ]
+              }
+            }
+          }
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
         }
+      },
+      "dependentRequired": {
+        "authorRegions": ["width", "height"],
+        "layers": [
+          "width",
+          "height"
+        ]
       }
     },
     "output": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["locale", "width", "height", "fps", "targetDurationSec", "quality"],
+      "required": [
+        "locale",
+        "width",
+        "height",
+        "fps",
+        "targetDurationSec",
+        "quality"
+      ],
       "properties": {
-        "locale": { "type": "string", "minLength": 1 },
-        "width": { "const": 1920 },
-        "height": { "const": 1080 },
-        "fps": { "const": 30 },
-        "targetDurationSec": { "type": "number", "minimum": 30, "maximum": 60 },
-        "quality": { "enum": ["draft", "standard", "high"] }
-      }
+        "locale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "width": {
+          "enum": [
+            1920,
+            1080
+          ]
+        },
+        "height": {
+          "enum": [
+            1080,
+            1920
+          ]
+        },
+        "fps": {
+          "const": 30
+        },
+        "targetDurationSec": {
+          "type": "number",
+          "minimum": 8,
+          "maximum": 90
+        },
+        "quality": {
+          "enum": [
+            "draft",
+            "standard",
+            "high"
+          ]
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "width": {
+              "const": 1920
+            },
+            "height": {
+              "const": 1080
+            }
+          }
+        },
+        {
+          "properties": {
+            "width": {
+              "const": 1080
+            },
+            "height": {
+              "const": 1920
+            }
+          }
+        }
+      ]
     },
     "audio": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["narrationMode", "voice", "externalAudioAssetId", "musicAssetId"],
+      "required": [
+        "narrationMode",
+        "voice",
+        "externalAudioAssetId",
+        "musicAssetId"
+      ],
       "properties": {
-        "narrationMode": { "enum": ["hyperframes", "external-audio", "none"] },
-        "voice": { "type": "string" },
+        "narrationMode": {
+          "enum": [
+            "hyperframes",
+            "external-audio",
+            "none"
+          ]
+        },
+        "voice": {
+          "type": "string"
+        },
+        "deliveryMode": {
+          "enum": [
+            "natural",
+            "presenter"
+          ]
+        },
         "externalAudioAssetId": {
           "anyOf": [
-            { "$ref": "#/$defs/id" },
-            { "type": "null" }
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "musicAssetId": {
           "anyOf": [
-            { "$ref": "#/$defs/id" },
-            { "type": "null" }
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
           ]
+        },
+        "voiceProfile": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "provider",
+                "modelId",
+                "voiceId",
+                "locale",
+                "speed",
+                "sentencePauseSec",
+                "clausePauseSec"
+              ],
+              "properties": {
+                "provider": {
+                  "const": "kokoro-onnx"
+                },
+                "modelId": {
+                  "const": "kokoro-v1.1-zh"
+                },
+                "voiceId": {
+                  "type": "string",
+                  "pattern": "^zm_[0-9]{3}$"
+                },
+                "locale": {
+                  "const": "zh-CN"
+                },
+                "speed": {
+                  "type": "number",
+                  "minimum": 0.75,
+                  "maximum": 1.3
+                },
+                "sentencePauseSec": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 2
+                },
+                "clausePauseSec": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "provider",
+                "modelId",
+                "voiceId",
+                "locale",
+                "selectionPath",
+                "selectionSha256",
+                "referenceAudioSha256"
+              ],
+              "properties": {
+                "provider": {
+                  "const": "qwen3-tts"
+                },
+                "modelId": {
+                  "const": "Qwen3-TTS-12Hz-1.7B-Base"
+                },
+                "voiceId": {
+                  "type": "string",
+                  "pattern": "^enhe-[a-z0-9]+(?:-[a-z0-9]+)*$"
+                },
+                "locale": {
+                  "const": "zh-CN"
+                },
+                "selectionPath": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:|/)(?!.*\\.\\.)(?!.*\\\\).+$"
+                },
+                "selectionSha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "referenceAudioSha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            }
+          ]
+        },
+        "pronunciationMap": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },
     "captions": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["enabled", "maxLines", "safeAreaPercent", "style"],
+      "required": [
+        "enabled",
+        "maxLines",
+        "safeAreaPercent",
+        "style"
+      ],
       "properties": {
-        "enabled": { "type": "boolean" },
-        "maxLines": { "type": "integer", "minimum": 1, "maximum": 2 },
-        "safeAreaPercent": { "type": "number", "minimum": 0, "exclusiveMaximum": 50 },
-        "style": { "type": "string", "minLength": 1 }
+        "enabled": {
+          "type": "boolean"
+        },
+        "maxLines": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        },
+        "safeAreaPercent": {
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMaximum": 50
+        },
+        "style": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "generatorPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "audience",
+        "marketing",
+        "authorEnding",
+        "voiceAcceptance",
+        "subtitles",
+        "ipCharacters",
+        "rulesSha256"
+      ],
+      "properties": {
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "audience": {
+          "const": "ordinary-ai-users"
+        },
+        "marketing": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "brand",
+            "url",
+            "displayDomain",
+            "screenAction",
+            "spokenAction"
+          ],
+          "properties": {
+            "brand": {
+              "type": "string",
+              "minLength": 1
+            },
+            "url": {
+              "type": "string",
+              "minLength": 1
+            },
+            "displayDomain": {
+              "type": "string",
+              "minLength": 1
+            },
+            "screenAction": {
+              "type": "string",
+              "minLength": 1
+            },
+            "spokenAction": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "authorEnding": {
+          "enum": [
+            "brand-signoff",
+            "contacts-secondary"
+          ]
+        },
+        "voiceAcceptance": {
+          "const": "REQUIRED"
+        },
+        "subtitles": {
+          "const": "transparent"
+        },
+        "ipCharacters": {
+          "const": "off"
+        },
+        "rulesSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "authorContacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "items"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "items": {
+          "type": "array",
+          "minItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "value"
+            ],
+            "properties": {
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "value": {
+                "type": "string",
+                "minLength": 1
+              },
+              "url": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "maxItems": 5,
+          "allOf": [
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "label"
+                ],
+                "properties": {
+                  "label": {
+                    "const": "GitHub"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "label"
+                ],
+                "properties": {
+                  "label": {
+                    "const": "X / Twitter"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "label"
+                ],
+                "properties": {
+                  "label": {
+                    "const": "网站"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "label"
+                ],
+                "properties": {
+                  "label": {
+                    "const": "微信"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "label"
+                ],
+                "properties": {
+                  "label": {
+                    "const": "邮箱"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          ]
+        }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "not": {
+          "required": [
+            "generatorPolicy"
+          ],
+          "properties": {
+            "generatorPolicy": {}
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "output": {
+            "properties": {
+              "width": {
+                "const": 1920
+              },
+              "height": {
+                "const": 1080
+              },
+              "targetDurationSec": {
+                "minimum": 30,
+                "maximum": 60,
+                "type": "number"
+              }
+            },
+            "type": "object"
+          }
+        }
+      }
+    }
+  ]
 }

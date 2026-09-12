@@ -1,12 +1,14 @@
 ---
 id: composition-builder.v1
-version: 1.0.0
+version: 1.1.0
 artifact: HyperFrames compositions
 ---
 
 # HyperFrames composition prompt
 
 Build the HTML compositions from the approved `DESIGN.md`, storyboard, and schema-valid video specification. The HTML is the visual source of truth. Use real brand assets and the recorded evidence; never replace missing identity with a generic gradient, unrelated stock media, or fabricated product UI.
+
+Current generatorPolicy tasks author structured `Scene.action` and invoke the common `video compose` entry. Real asset IDs, true layer bounds, actual before/after states, purpose and frame intervals must reach the renderer. No product-name branches or private whole-film templates. Follow the active generator guide: transparent captions, declared display/body fonts, original Logo without IP, ENHE website primary CTA and the full five-item authorized secondary contact block. Use actual portrait or landscape layout, never a center crop. Keep a contact scene visible for at least six seconds and verify its actual reading quality.
 
 ## Inputs
 

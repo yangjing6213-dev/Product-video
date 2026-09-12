@@ -1,4 +1,10 @@
 import { readFileSync } from 'node:fs';
+import type { BrandSelection } from './assets/library.ts';
+import type { GeneratorPolicy } from './quality/policy.ts';
+import type { VoiceProfile } from './quality/voice-profile.ts';
+import type { SceneAction } from './quality/motion.ts';
+import type { SceneWorkflow } from './quality/workflow.ts';
+import type { DeliveryMode, VoiceDirection } from './quality/voice-direction.ts';
 
 import { Ajv2020, type ValidateFunction } from 'ajv/dist/2020.js';
 
@@ -6,6 +12,13 @@ export type AssetType = 'logo' | 'screenshot' | 'screen-recording' | 'image' | '
 export type AssetLicense = 'owned' | 'authorized' | 'unknown';
 
 export interface Asset {
+  width?: number;
+  height?: number;
+  fontFamily?: string;
+  fontWeight?: number;
+  /** Reviewed pixel regions in the unmodified author poster; never guessed from its filename. */
+  authorRegions?: { portrait: [number, number, number, number]; information: [number, number, number, number] };
+  layers?: Array<{ id: string; assetId: string; bounds: [number, number, number, number]; role: 'base' | 'title' | 'logo' | 'subtitle' | 'value-line' }>;
   id: string;
   type: AssetType;
   path: string;
@@ -16,6 +29,9 @@ export interface Asset {
 }
 
 export interface ProductDetails {
+  form?: string;
+  prerequisites?: string[];
+  example?: { name: string; explanation: string };
   name: string;
   url: string;
   oneLiner: string;
@@ -35,6 +51,8 @@ export interface ProductDetails {
 }
 
 export interface BrandSpec {
+  presentation?: 'workflow';
+  visualStyle?: 'editorial-v1' | 'editorial-v2';
   logoAssetId: string;
   colors: string[];
   fontFamilies: string[];
@@ -45,14 +63,17 @@ export interface BrandSpec {
 
 export interface OutputSpec {
   locale: string;
-  width: 1920;
-  height: 1080;
+  width: 1920 | 1080;
+  height: 1080 | 1920;
   fps: 30;
   targetDurationSec: number;
   quality: 'draft' | 'standard' | 'high';
 }
 
 export interface AudioSpec {
+  deliveryMode?: DeliveryMode;
+  voiceProfile?: VoiceProfile;
+  pronunciationMap?: Record<string, string>;
   narrationMode: 'hyperframes' | 'external-audio' | 'none';
   voice: string;
   externalAudioAssetId: string | null;
@@ -67,6 +88,8 @@ export interface CaptionSpec {
 }
 
 export interface ProductInput {
+  generatorPolicy?: GeneratorPolicy;
+  authorContacts?: { name: string; items: Array<{ label: string; value: string; url?: string }> };
   schemaVersion: '1.0';
   projectId: string;
   product: ProductDetails;
@@ -75,9 +98,15 @@ export interface ProductInput {
   output: OutputSpec;
   audio: AudioSpec;
   captions: CaptionSpec;
+  brandLibrary?: BrandSelection;
 }
 
 export interface Scene {
+  authorPosterAssetId?: string;
+  workflow?: SceneWorkflow;
+  voiceDirection?: VoiceDirection;
+  backgroundAssetId?: string;
+  action?: SceneAction;
   id: string;
   recipe: string;
   goal: string;

@@ -4,48 +4,104 @@
   "title": "EPVS Video Specification",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "projectId", "recipeVersion", "promptVersions", "product", "brand", "output", "assets", "audio", "captions", "narrative", "scenes", "qa", "provenance"],
+  "required": [
+    "schemaVersion",
+    "projectId",
+    "recipeVersion",
+    "promptVersions",
+    "product",
+    "brand",
+    "output",
+    "assets",
+    "audio",
+    "captions",
+    "narrative",
+    "scenes",
+    "qa",
+    "provenance"
+  ],
   "properties": {
-    "schemaVersion": { "const": "1.0" },
-    "projectId": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/projectId" },
-    "recipeVersion": { "type": "string", "minLength": 1 },
+    "brandLibrary": {
+      "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/brandLibrary"
+    },
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "projectId": {
+      "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/projectId"
+    },
+    "recipeVersion": {
+      "type": "string",
+      "minLength": 1
+    },
     "promptVersions": {
       "type": "object",
       "minProperties": 1,
-      "additionalProperties": { "type": "string", "minLength": 1 }
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
     },
-    "product": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/product" },
-    "brand": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/brand" },
-    "output": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/output" },
+    "product": {
+      "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/product"
+    },
+    "brand": {
+      "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/brand"
+    },
+    "output": {
+      "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/output"
+    },
     "assets": {
       "type": "array",
-      "items": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/asset" }
+      "items": {
+        "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/asset"
+      }
     },
-    "audio": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/audio" },
-    "captions": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/captions" },
+    "audio": {
+      "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/audio"
+    },
+    "captions": {
+      "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/captions"
+    },
     "narrative": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["coreMessage", "cta"],
+      "required": [
+        "coreMessage",
+        "cta"
+      ],
       "properties": {
-        "coreMessage": { "type": "string", "minLength": 1 },
-        "cta": { "type": "string", "minLength": 1 }
+        "coreMessage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cta": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "scenes": {
       "type": "array",
-      "minItems": 5,
-      "maxItems": 8,
-      "items": { "$ref": "#/$defs/scene" }
+      "minItems": 1,
+      "maxItems": 12,
+      "items": {
+        "$ref": "#/$defs/scene"
+      }
     },
     "qa": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["checks"],
+      "required": [
+        "checks"
+      ],
       "properties": {
         "checks": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 },
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
           "uniqueItems": true
         }
       }
@@ -53,72 +109,388 @@
     "provenance": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["sourceUrls", "generatedAt"],
+      "required": [
+        "sourceUrls",
+        "generatedAt"
+      ],
       "properties": {
         "sourceUrls": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
-        "generatedAt": { "type": "string", "minLength": 1 }
+        "generatedAt": {
+          "type": "string",
+          "minLength": 1
+        }
       }
+    },
+    "generatorPolicy": {
+      "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/generatorPolicy"
+    },
+    "authorContacts": {
+      "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/authorContacts"
     }
   },
   "$defs": {
     "scene": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "recipe", "goal", "plannedDurationSec", "actualStartSec", "actualEndSec", "voiceover", "onScreenText", "assetRefs", "compositionFile", "motionDirection", "transition", "fallback"],
+      "required": [
+        "id",
+        "recipe",
+        "goal",
+        "plannedDurationSec",
+        "actualStartSec",
+        "actualEndSec",
+        "voiceover",
+        "onScreenText",
+        "assetRefs",
+        "compositionFile",
+        "motionDirection",
+        "transition",
+        "fallback"
+      ],
       "properties": {
-        "id": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/id" },
-        "recipe": { "type": "string", "minLength": 1 },
-        "goal": { "type": "string", "minLength": 1 },
-        "plannedDurationSec": { "type": "number", "exclusiveMinimum": 0 },
+        "authorPosterAssetId": {
+          "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/id"
+        },
+        "id": {
+          "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/id"
+        },
+        "recipe": {
+          "type": "string",
+          "minLength": 1
+        },
+        "goal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "plannedDurationSec": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
         "actualStartSec": {
           "anyOf": [
-            { "type": "number", "minimum": 0 },
-            { "type": "null" }
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "actualEndSec": {
           "anyOf": [
-            { "type": "number", "minimum": 0 },
-            { "type": "null" }
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
           ]
         },
-        "voiceover": { "type": "string" },
+        "voiceover": {
+          "type": "string"
+        },
         "onScreenText": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "assetRefs": {
           "type": "array",
-          "items": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/id" },
+          "items": {
+            "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/id"
+          },
           "uniqueItems": true
         },
-        "compositionFile": { "type": "string", "minLength": 1 },
-        "motionDirection": { "type": "string" },
+        "compositionFile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "motionDirection": {
+          "type": "string"
+        },
         "transition": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["type", "durationSec"],
+          "required": [
+            "type",
+            "durationSec"
+          ],
           "properties": {
-            "type": { "enum": ["wipe", "reveal", "crossfade", "shader"] },
-            "durationSec": { "type": "number", "minimum": 0 }
+            "type": {
+              "enum": [
+                "wipe",
+                "reveal",
+                "crossfade",
+                "shader"
+              ]
+            },
+            "durationSec": {
+              "type": "number",
+              "minimum": 0
+            }
           }
         },
         "fallback": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["onMissingAsset", "onUnsupportedEffect"],
+          "required": [
+            "onMissingAsset",
+            "onUnsupportedEffect"
+          ],
           "properties": {
-            "onMissingAsset": { "const": "use-brand-card" },
-            "onUnsupportedEffect": { "const": "use-css-reveal" }
+            "onMissingAsset": {
+              "const": "use-brand-card"
+            },
+            "onUnsupportedEffect": {
+              "const": "use-css-reveal"
+            }
           }
         },
-        "caption": { "type": "string" },
-        "heroFrameSec": { "type": "number", "minimum": 0 }
+        "caption": {
+          "type": "string"
+        },
+        "heroFrameSec": {
+          "type": "number",
+          "minimum": 0
+        },
+        "action": {
+          "$ref": "#/$defs/sceneAction"
+        },
+        "workflow": {
+          "$ref": "#/$defs/sceneWorkflow"
+        },
+        "voiceDirection": {
+          "$ref": "#/$defs/voiceDirection"
+        },
+        "backgroundAssetId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "voiceDirection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["purpose", "attitude", "emphasis", "pace", "pause", "visualEvent"],
+      "properties": {
+        "purpose": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "attitude": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "emphasis": { "type": "array", "minItems": 1, "maxItems": 5, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 80 } },
+        "pace": { "enum": ["slower", "steady", "brisk"] },
+        "pause": { "enum": ["connected", "balanced", "deliberate"] },
+        "visualEvent": { "type": "string", "minLength": 1, "maxLength": 240 }
+      }
+    },
+    "sceneWorkflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["layout", "cards"],
+      "allOf": [{
+        "if": { "properties": { "layout": { "const": "feature-row-4" } } },
+        "then": { "properties": { "cards": { "type": "array", "minItems": 4, "maxItems": 4 } } },
+        "else": { "properties": { "cards": { "type": "array", "minItems": 3, "maxItems": 3 } } }
+      }],
+      "properties": {
+        "layout": { "enum": ["vertical-3", "horizontal-3", "feature-row-4"] },
+        "cards": {
+          "type": "array", "minItems": 3, "maxItems": 4,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["id", "previewAssetId", "title", "sentence", "fields", "focusFrame", "completeFrame"],
+            "properties": {
+              "id": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/id" },
+              "previewAssetId": { "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/id" },
+              "title": { "type": "string", "minLength": 1, "maxLength": 60 },
+              "sentence": { "type": "string", "minLength": 1, "maxLength": 160 },
+              "fields": {
+                "type": "array", "minItems": 1, "maxItems": 4,
+                "items": {
+                  "type": "object", "additionalProperties": false, "required": ["label", "value"],
+                  "properties": {
+                    "label": { "type": "string", "minLength": 1, "maxLength": 30 },
+                    "value": { "type": "string", "minLength": 1, "maxLength": 120 }
+                  }
+                }
+              },
+              "focusFrame": { "type": "integer", "minimum": 0 },
+              "completeFrame": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "sceneAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "intent",
+        "primitive",
+        "subject",
+        "beforeState",
+        "afterState",
+        "startFrame",
+        "endFrame",
+        "holdFrames"
+      ],
+      "properties": {
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "primitive": {
+          "enum": [
+            "focus-transfer",
+            "workflow-progress",
+            "layer-assemble",
+            "state-change",
+            "before-after",
+            "object-handoff",
+            "reading-hold"
+          ]
+        },
+        "subject": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "assetId"
+          ],
+          "properties": {
+            "assetId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "layerIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            }
+          }
+        },
+        "beforeState": {
+          "type": "string",
+          "minLength": 1
+        },
+        "afterState": {
+          "type": "string",
+          "minLength": 1
+        },
+        "startFrame": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "endFrame": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "holdFrames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "syncCueId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "direction": {
+          "enum": [
+            "left",
+            "right",
+            "up",
+            "down"
+          ]
+        },
+        "relatedAssetIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "focus": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "x",
+            "y",
+            "width",
+            "height"
+          ],
+          "properties": {
+            "x": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "y": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "width": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "height": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            }
+          }
+        }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "not": {
+          "required": [
+            "generatorPolicy"
+          ],
+          "properties": {
+            "generatorPolicy": {}
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "scenes": {
+            "minItems": 5,
+            "maxItems": 8,
+            "type": "array"
+          },
+          "output": {
+            "properties": {
+              "width": {
+                "const": 1920
+              },
+              "height": {
+                "const": 1080
+              },
+              "targetDurationSec": {
+                "minimum": 30,
+                "maximum": 60,
+                "type": "number"
+              }
+            },
+            "type": "object"
+          }
+        }
+      }
+    }
+  ]
 }

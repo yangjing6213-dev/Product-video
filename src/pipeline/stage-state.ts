@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { createReadStream } from 'node:fs';
 import { mkdir, open, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -31,7 +32,8 @@ export async function readState(project: string): Promise<RunState> {
 export async function hashFiles(files: string[], extra: unknown = null): Promise<string> {
   const hash = createHash('sha256').update(JSON.stringify(extra));
   for (const file of [...files].sort()) {
-    hash.update(file); hash.update(await readFile(file));
+    hash.update(file);
+    for await (const chunk of createReadStream(file)) hash.update(chunk);
   }
   return hash.digest('hex');
 }

@@ -1,5 +1,7 @@
 # Benchmark Guide
 
+This guide preserves the historical MVP benchmark contract. Current new jobs follow the [current generator guide](GENERATOR-QUALITY.md) and the user's latest explicit requirements.
+
 The three named product projects, their captured files, generated media, private inputs, and licensed assets are evaluation fixtures and are not distributed with the public source. A fresh clone cannot run the three-product example commands directly. Before using benchmark helper scripts, initialize the three project directories from your own inputs according to the [input guide](INPUT-GUIDE.md) and the repository Skill input contract, then supply assets you are authorized to use.
 
 ## Fixed products
@@ -34,7 +36,7 @@ npm run video -- render --project <projectId> --quality high --resume
 npm run video -- run --project <projectId> --resume
 ```
 
-Default capture invokes local HyperFrames `capture` and automatically falls back to supplied assets on failure. Use `--supplied-only` for the explicit supplied-assets path. Direct render accepts `draft` and `high`; `run` executes both. `verify-input`, `capture`, `qa`, `render`, and `run` can reuse matching complete stage outputs with `--resume`; a missing output or byte change forces that stage to rerun. `init` remains idempotent for identical input without the flag. If npm is not on PATH, use `node .tools/npm/bin/npm-cli.js` in place of `npm`.
+Default capture invokes local HyperFrames `capture` and automatically falls back to supplied assets on failure. Use `--supplied-only` for the explicit supplied-assets path. Direct render accepts `draft` and `high`; Historical tasks without a generator policy run both. Current-policy tasks default to draft and require actual human visual/voice approval for explicit high quality; see [Generator quality](GENERATOR-QUALITY.md). `verify-input`, `capture`, `qa`, `render`, and `run` can reuse matching complete stage outputs with `--resume`; a missing output or byte change forces that stage to rerun. `init` remains idempotent for identical input without the flag. If npm is not on PATH, use `node .tools/npm/bin/npm-cli.js` in place of `npm`.
 
 Record actual commands, exits, timing, paths, and warnings from JSON reports. Direct command details live in `reports/commands/*.json`; render reports use `render-draft-report.json` and `render-high-report.json`, with `render-report.json` copied from a successful high render. `reports/run-history.json` preserves the first playable draft timestamp so correction time is not reset by a later render. Use `npm run video -- help` and the installed HyperFrames `0.8.33` command evidence when they differ from a planning document.
 

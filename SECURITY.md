@@ -28,4 +28,4 @@ Third-party dependencies, models, fonts, and media retain their own security and
 
 ## Known dependency advisory
 
-The pinned `adm-zip` dependency is affected by GHSA-vwc7-r8mq-g2x9. The current application-path assessment and exact reviewed versions are documented in [DEPENDENCY-RISK.md](docs/security/DEPENDENCY-RISK.md). The local consistency check is not a runtime sandbox or a vulnerability fix, and a successful check must not be reported as a clean `npm audit` result.
+The project previously pinned `adm-zip` 0.6.0, affected by GHSA-vwc7-r8mq-g2x9, and now resolves 0.6.1. The reviewed patch, actual junction regressions and dated audit result are documented in [DEPENDENCY-RISK.md](docs/security/DEPENDENCY-RISK.md). The consistency check is not a runtime sandbox and does not run `npm audit`; record the scanner separately before release.

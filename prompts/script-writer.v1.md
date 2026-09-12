@@ -1,6 +1,6 @@
 ---
 id: script-writer.v1
-version: 1.0.0
+version: 1.2.0
 artifact: SCRIPT.md
 ---
 
@@ -18,6 +18,8 @@ Write a natural product-video script from verified product facts and the approve
 
 Use one primary problem, no more than three features or benefits, and one CTA. Preserve source qualifiers. For `narrationMode=none`, write concise screen copy and timing intent without pretending narration or an audio stream exists.
 
+For new work, organize the message as a recognizable user problem/context → practical approach → visible result → how to start. This is a communication sequence, not a fixed scene template. Prefer everyday language over internal implementation terms. State the promoted product, example project and publishing brand as separate facts; do not let an example's large title imply it is the product being sold. Explain requirements honestly. A claim without actual evidence stays out of the video. Freeze the complete narration, screen and subtitle scope for user copy approval before rendering. If the user has accepted an existing recording and says to keep it, improve its visuals without rewriting or regenerating that recording.
+
 ## Output contract
 
 Write `SCRIPT.md` containing:
@@ -29,4 +31,4 @@ Write `SCRIPT.md` containing:
 - a claim ledger mapping every factual statement to evidence;
 - unresolved facts that must not enter the video.
 
-The total estimated duration must remain between 30 and 60 seconds. Screen text should be shorter than spoken text, naturally phrased for the locale, and suitable for at most two caption lines. With narration, final timing remains provisional until real audio and transcript timing are available.
+For current generatorPolicy tasks, use the applicable 8–90 second horizontal/vertical contract and purposeful scene count; only historical MVP inputs retain 5–8 beats and 30–60 seconds. Address ordinary AI users, identify product form and prerequisites, distinguish a demonstration project, and keep the ENHE website as primary CTA. Preserve the complete authorized secondary authorContacts block in the reviewed screen text and allow reading time. Screen text should be naturally phrased and suitable for at most two caption lines. With narration, actual audio determines final timing; never force it by repeated speed changes.

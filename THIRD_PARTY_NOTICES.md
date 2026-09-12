@@ -51,6 +51,19 @@ The complete optional Python dependency set is pinned in
 its own upstream license. Model licensing does not by itself grant rights in a
 particular generated voice, dataset, trademark, or input text.
 
+The optional local Qwen narration workflow uses
+[`qwen-tts` 0.1.1](https://github.com/QwenLM/Qwen3-TTS), the historical
+[`Qwen3-TTS-12Hz-1.7B-CustomVoice`](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice)
+audition model, and the explicitly selected
+[`Qwen3-TTS-12Hz-1.7B-Base`](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-Base)
+reference-voice model, under their upstream Apache-2.0 licenses. Actual model
+revisions, voice authorization and selected parameters are frozen in local
+task evidence. Environments, dependency inventories, model weights, reference
+voices, approvals, auditions and generated recordings are excluded from source
+packages. Transitive dependencies retain their own terms. Code/model licensing
+does not authorize use or imitation of an individual's voice; supply a reference
+with the necessary rights and explicitly approve its intended use.
+
 ## Assets, examples, and generated media
 
 The public source distribution excludes `projects/`, `benchmarks/`,

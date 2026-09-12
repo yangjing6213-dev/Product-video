@@ -82,11 +82,11 @@ export function checkMedia(probe: any, spec: VideoSpec): CheckResult[] {
     result(
       'media.duration',
       Number.isFinite(duration) &&
-        duration >= 30 &&
-        duration <= 60 &&
+        duration >= (spec.generatorPolicy ? 8 : 30) &&
+        duration <= (spec.generatorPolicy ? 90 : 60) &&
         Math.abs(duration - spec.output.targetDurationSec) <= 0.5,
       `Duration ${duration.toFixed(3)}s matches the spec`,
-      `Expected ${spec.output.targetDurationSec}s (±0.5s, within 30–60s); received ${Number.isFinite(duration) ? `${duration}s` : 'missing'}`,
+      `Expected ${spec.output.targetDurationSec}s (±0.5s, within ${spec.generatorPolicy ? '8–90' : '30–60'}s); received ${Number.isFinite(duration) ? `${duration}s` : 'missing'}`,
     ),
     result(
       'media.video-codec',

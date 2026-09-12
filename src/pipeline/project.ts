@@ -1,11 +1,14 @@
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import { validateInput, validateSpec } from '../contracts.ts';
 import type { ProductInput, VideoSpec } from '../contracts.ts';
 import { atomicJson, exists, digest, safeProjectId } from './stage-state.ts';
 import { REPO } from './tools.ts';
+import { freezeBrandAssets, verifyFrozenBrandAssets, resolveProjectAsset } from '../assets/library.ts';
+import { isActiveGeneratorPolicy, resolveGeneratorInput, trustedGeneratorPolicy } from '../quality/policy.ts';
 
-export const projectPath = (id: string) => path.join(REPO, 'projects', safeProjectId(id));
+export const projectPath = (id: string, root = REPO) => path.join(root, 'projects', safeProjectId(id));
 export async function inputFor(project: string): Promise<ProductInput> { return validateInput(JSON.parse(await readFile(path.join(project, 'input/product-input.json'), 'utf8'))); }
 export async function specFor(project: string): Promise<VideoSpec> { return validateSpec(JSON.parse(await readFile(path.join(project, 'video-spec.json'), 'utf8'))); }
 
@@ -41,9 +44,26 @@ async function planAssets(input: ProductInput, inputFile: string, project: strin
   return planned;
 }
 
-export async function initialize(inputFile: string): Promise<string> {
-  const input = validateInput(JSON.parse(await readFile(inputFile, 'utf8')));
-  const project = projectPath(input.projectId);
+export async function initialize(inputFile: string, root = REPO): Promise<string> {
+  const submitted = JSON.parse(await readFile(inputFile, 'utf8'));
+  const existingPath = projectPath(submitted?.projectId, root);
+  const existingInput = await exists(path.join(existingPath, 'input/product-input.json'))
+    ? await inputFor(existingPath) : null;
+  if (existingInput?.generatorPolicy && existingInput.generatorPolicy.authorEnding !== 'brand-signoff'
+      && !trustedGeneratorPolicy(existingInput.generatorPolicy)) {
+    throw new Error('Existing generator policy is unknown or modified');
+  }
+  let contacts = existingInput?.authorContacts;
+  if (!existingInput) {
+    const contactPath = await resolveProjectAsset(root, 'assets/brand/enhe/author/contact-profile.json', true);
+    if (await exists(contactPath)) contacts = JSON.parse(await readFile(contactPath, 'utf8'));
+  }
+  const input = validateInput(!existingInput || isActiveGeneratorPolicy(existingInput.generatorPolicy)
+    ? resolveGeneratorInput(submitted, contacts)
+    : submitted);
+  // A newly introduced visual default must not upgrade an already frozen active-policy task.
+  if (existingInput && !existingInput.brand.visualStyle && !submitted.brand?.visualStyle) delete input.brand.visualStyle;
+  const project = projectPath(input.projectId, root);
   const target = path.join(project, 'input/product-input.json');
   const planned = await planAssets(input, inputFile, project);
   const canonicalInput: ProductInput = {
@@ -53,7 +73,7 @@ export async function initialize(inputFile: string): Promise<string> {
   if (await exists(target)) {
     const current = await inputFor(project);
     const currentAssets = new Map(current.assets.map((asset) => [asset.id, asset]));
-    const metadataMatches = JSON.stringify(assetPathIdentity(current)) === JSON.stringify(canonicalInput);
+    const metadataMatches = isDeepStrictEqual(assetPathIdentity(current), canonicalInput);
     const assetBytesMatch = (
       await Promise.all(planned.map(async (asset, index) => {
         const currentAsset = currentAssets.get(input.assets[index]!.id);
@@ -64,9 +84,13 @@ export async function initialize(inputFile: string): Promise<string> {
         return digest(await readFile(asset.source)) === digest(await readFile(currentFile));
       }))
     ).every(Boolean);
-    if (metadataMatches && assetBytesMatch) return project;
+    if (metadataMatches && assetBytesMatch) {
+      if (current.brandLibrary) await freezeBrandAssets(root, project, current.brandLibrary);
+      return project;
+    }
     throw new Error('Project already exists with different input; use a new projectId to preserve existing data');
   }
+  if (!input.brandLibrary) throw new Error('New tasks require brandLibrary selections with pinned approved versions, or a semantic omissionReason');
   for (const [index, asset] of input.assets.entries()) {
     const plan = planned[index]!;
     if (!plan.sourceExists && asset.required && !asset.fallbackAssetId) {
@@ -74,6 +98,7 @@ export async function initialize(inputFile: string): Promise<string> {
     }
     if (await exists(plan.destination)) throw new Error(`Asset target already exists: ${asset.id}`);
   }
+  await freezeBrandAssets(root, project, input.brandLibrary);
   await mkdir(path.join(project, 'assets'), { recursive: true });
   for (const asset of planned) {
     if (asset.sourceExists) await copyFile(asset.source, asset.destination);
@@ -81,6 +106,12 @@ export async function initialize(inputFile: string): Promise<string> {
   await atomicJson(target, canonicalInput);
   await writeFile(path.join(project, 'CREATIVE-NEXT.md'), 'Use skills/enhe-product-video/SKILL.md after capture to author DESIGN.md, SCRIPT.md, STORYBOARD.md, video-spec.json and compositions.\n');
   return project;
+}
+export async function verifyProjectBrand(project: string): Promise<void> {
+  const input = await inputFor(project);
+  if (!input.brandLibrary) return; // Historical jobs retain their original asset contract.
+  const frozen = await verifyFrozenBrandAssets(path.resolve(project, '../..'), project);
+  if (JSON.stringify(frozen.selection) !== JSON.stringify(input.brandLibrary)) throw new Error('Task brand selection differs from its frozen manifest');
 }
 export async function manifest(project: string, input: ProductInput): Promise<string> {
   const assets = [];

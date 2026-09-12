@@ -4,13 +4,16 @@ import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { command, REPO } from '../../src/pipeline/tools.ts';
+import { copyDraftFromVideoSpec, freezeCopyDraft, recordCopyDecision } from '../../src/quality/copy.ts';
+import { validVideoSpec } from '../fixtures/input.ts';
 
 test('Chinese TTS sample timing and exclusive publication regression tests', async t => {
   const python = path.join(REPO,'.tools/tts-venv/Scripts/python.exe');
   if (!await access(python).then(()=>true,()=>false)) { t.skip('Repository-local Chinese TTS backend required'); return; }
   const result = await command(python,['-X','utf8',path.join(REPO,'scripts/test_synthesize_zh.py')]);
   assert.equal(result.exitCode,0,result.stderr);
-  assert.match(result.stderr,/Ran 7 tests/);
+  assert.match(result.stderr,/Ran [1-9]\d* tests/);
+  assert.match(result.stderr,/\bOK\b/);
 });
 
 test('installed Chinese backend generates real hash-bound WAV and preserves it on rerun', async t => {
@@ -22,7 +25,13 @@ test('installed Chinese backend generates real hash-bound WAV and preserves it o
   const text = '从真实任务出发，找到合适的人工智能工具。';
   try {
     await mkdir(path.join(project,'input'));
-    await writeFile(path.join(project,'video-spec.json'),JSON.stringify({output:{targetDurationSec:5},scenes:[{id:'scene-01',actualStartSec:0,actualEndSec:5,voiceover:text}]}));
+    const spec = { ...structuredClone(validVideoSpec), projectId,
+      output: { ...validVideoSpec.output, targetDurationSec: 5 },
+      audio: { ...validVideoSpec.audio, narrationMode: 'hyperframes' as const },
+      scenes: [{ ...validVideoSpec.scenes[0]!, id:'scene-01', actualStartSec:0, actualEndSec:5, voiceover:text, onScreenText:[text] }] };
+    await writeFile(path.join(project,'video-spec.json'),JSON.stringify(spec));
+    const copy = await freezeCopyDraft(REPO, project, copyDraftFromVideoSpec(spec, 'TEST-COPY-v1'));
+    await recordCopyDecision(REPO, project, { decision: 'ACCEPTED', copySha256: copy.copySha256, userInstruction: 'TEST FIXTURE ONLY: synthetic speech regression text approved.' });
     await writeFile(path.join(project,'input/narration-script.json'),JSON.stringify({scenes:[{sceneId:'scene-01',captionSegments:[{text}]}]}));
     const args = ['-X','utf8',path.join(REPO,'scripts/synthesize-zh.py'),projectId];
     const first = await command(python,args,{timeoutMs:120000});

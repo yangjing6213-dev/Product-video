@@ -5,16 +5,18 @@ description: Use when a user explicitly asks to generate a product introduction 
 
 # ENHE Product Video
 
-Create a truthful 30–60 second product video with Codex-authored creative artifacts and HyperFrames-first local rendering. Product evidence and licensed assets determine the story.
+Create truthful product videos with Codex-authored creative artifacts and HyperFrames-first local rendering. Product evidence, authorized assets, and the current task's acceptance contract determine the story and duration. Existing 30–60 second MVP contracts remain available; a quality-repair task follows its own sample and approval gates.
 
 ## Read first
 
-1. Read the repository `AGENTS.md`, project input, and current CLI help.
+1. Read the repository `AGENTS.md` when present, project input, and current CLI help.
 2. Read [references/input-contract.md](references/input-contract.md).
 3. Follow [references/workflow.md](references/workflow.md) in order.
 4. Select shots with [references/recipes.md](references/recipes.md).
 5. Apply [references/qa-checklist.md](references/qa-checklist.md) before final rendering and reporting.
-6. When the user requests 中文旁白 (local Chinese narration) or Chinese subtitles, read [the Chinese TTS guide](../../docs/guides/CHINESE-TTS.md) before authoring audio.
+6. When the user requests 中文旁白 (local Chinese narration) or Chinese subtitles, read the **current new-task entry** in [the Chinese TTS guide](../../docs/guides/CHINESE-TTS.md) before authoring audio. Its historical benchmark replay section does not replace the normal `video voice` route.
+7. For every new job, read [the IP library guide](../../docs/guides/IP-LIBRARY.md), select reviewed assets from the project catalog, and freeze the exact versions before preview or rendering.
+8. For all current new jobs, follow [the active generator guide](../../docs/guides/GENERATOR-QUALITY.md) and `recipes/policies/generator-quality.v3.json`. This current policy and the user's explicit changes override historical R2/MVP examples below.
 
 ## Creative ownership
 
@@ -22,19 +24,66 @@ Codex writes and revises `PRODUCT-SUMMARY.md`, `DESIGN.md`, `SCRIPT.md`, `STORYB
 
 Use genuine product and brand assets. Track each asset's source and license. Derive non-critical gaps only from real pages and supplied material; use neutral language for missing critical facts. Never invent metrics, customers, reviews, awards, UI, or capabilities.
 
+## Brand library and frozen jobs
+
+The only daily brand source is `assets/brand/enhe/ip/catalog.json`. New inputs declare `brandLibrary.selections` with `assetId`, `contentVersion`, `sha256`, and a meaningful `purpose`; an empty selection requires `omissionReason`. Select by the product's story, role, pose, and embedded text. Only individually reviewed `APPROVED` versions may be selected. PNG/RGBA does not prove transparency.
+
+`init` freezes selected bytes and `frozen-brand-assets.json` into the job. Compositions use those frozen job paths. Resume verifies the existing snapshot; it must never silently select another IP or replace a version from the current catalog. Do not scan external folders or add external fallback paths. Preserve historical jobs and videos.
+
+## Quality-repair gate
+
+Every video now has a separate copy approval gate before speech synthesis or a new render, including silent samples. Present the complete narration, on-screen text (including editable author-ending text), matching subtitles, and CTA to the user. Freeze the reviewed version in that video's `copy-script.json`; record only the user's actual explicit decision and reviewed `copySha256` through the repository quality CLI. Follow [the copy review guide](../../docs/guides/COPY-REVIEW.md). Do not interpret acceptance of motion, IP/background direction, a voice ID, or engineering QA as copy approval or final film approval.
+
+Bind `copy.sha256` in new frozen creative plans. A different word, subtitle, screen label, or CTA requires a newly reviewed copy/video variant. Scene, font, timing, or vocal delivery changes within the approved wording do not revoke copy approval. Historical byte-identical video caches may be read without fabricated retrospective approvals; generating a new video from an old plan requires the new gate. Preserve current user decisions in their scoped records rather than rewriting old candidate acceptance.
+
+The current M1 produces two representative frames, an 8–12 second subject-action and voice sample, and up to three authorized Mandarin male voice candidates for concentrated user review. Human acceptance of visual, motion and voice choices is required before formal M2 production. Library migration, metadata checks, a model score, or a playable video cannot satisfy that gate.
+
+Use the original company Logo, designed display typography, clear body/subtitle text, purposeful subject actions and transitions. Current new jobs use no IP characters. The requested voice is a young adult male speaking standard Mandarin with natural promotional energy; an installed backend or a historic voice approval does not meet this requirement. Reuse valid frozen audio without repeat generation. Keep unaccepted visual and voice choices as candidates; do not install them as permanent Skill defaults. Review third-party methods and licenses before adapting them; retain HyperFrames as the default renderer.
+
+Current content is for ordinary AI users: show real product evidence, label demonstration projects and state actual prerequisites. Source URLs are facts; the primary screen and spoken CTA lead to the ENHE homepage. **Preserve all five authorized author contacts** in a separate editable secondary ending block: GitHub, X / Twitter, website, WeChat and email. Load their private local profile during init and include them in the frozen copy. Do not delete contacts based on the superseded attachment clause; do not restore a full CV or portrait by assumption. Give the contact block sufficient reading time. Keep captions transparent and clear of the CTA and evidence. Licensed background music supports the voice without hiding mechanical speech. Common `Scene.action` primitives must act on real assets/layers; do not use a product-name branch or one whole-film template with labels swapped.
+
+New workflow compositions use `brand.presentation: "workflow"`. Author the whole stage around real documents, original logo files, photographic references and actual product outputs; do not return to fixed left-copy/right-example composition or hand-drawn/character visuals. `Scene.workflow` supports vertical three-card extraction, horizontal three-card progression, and four feature cards. Every card declares a real preview, a meaningful short sentence and fields. Put all card titles, sentences and label-value lines verbatim in reviewed `onScreenText`. Use `workflow-progress` for ordered ordinary/focus/completed states and synchronized path growth; preserve reading time after the action. Check paused frames and reverse seeking. A photographic reference must remain labelled as a reference, not presented as a generated product result.
+
+Separate voice identity (`audio.voiceProfile`) from delivery (`audio.deliveryMode`: `natural` or `presenter`) and each spoken scene's `voiceDirection` (purpose, attitude, exact-text emphasis, pace, pause, visualEvent). Author complete semantic passages, never one TTS call per subtitle line. The existing local Kokoro backend supports speed and pauses; purpose, attitude, emphasis and visualEvent are director metadata, not native emotion controls. Never read those notes aloud or claim unsupported emotion, pitch, energy or word-emphasis controls work. Freeze the effective mapping, text, pronunciation, provider/model/voice and timing evidence together. Do not silently switch voices or stretch/pitch-shift audio to fit a preset duration.
+
+Resolve the current project voice selection from the private `.tools/selected-voice.json`, when present. Verify its approval receipt hash and referenced audio hashes before use; preserve the original, listening copy and approval receipt as immutable project-local versions. Freeze their exact identity in the task profile; keep private paths and hashes out of distributable examples. Reuse accepted audio for identical approved copy. Do not restart auditions, revive a rejected historical baseline, or silently replace the selected voice. When no approved selection exists, deliver dry, comparable-loudness auditions within the task's authorized limit (at most three male identities and two delivery levels for one candidate, at most five new samples total). Voice IDs and signal metrics cannot prove youth, naturalness or promotional energy. If installed capabilities remain insufficient, state the gap and propose one supported alternative; obtain authorization before installation, payment or external upload unless the current task already covers it. After selection, validate two different content types including an unseen approved script through the normal entry point before claiming general improvement.
+
+The normal `video voice` route supports the currently approved Qwen reference through an explicit `qwen3-tts` profile. Follow the Chinese TTS guide: identical approved speech reuses its original bytes with their actual model provenance (VoiceDesign for historical B, Base for subsequent Base samples); different approved text uses authorized local Base reference synthesis and real Whisper DTW alignment. Use `--prepare-only` to retain measured speech and cues, adjust only a new unfrozen draft's scene timing, then resume normal `voice → compose → run`. Reuse the preparation package without another inference; never change approved copy or old frozen scenes to make timing pass. Preserve raw ASR, execution arguments, model/configuration/authorization and historical runner evidence with the audio and copy hashes. Base direction fields are metadata, not native `instruct`, emotion or per-scene prosody controls; do not apply Kokoro speed/pause mappings. Report `crossTextVoiceIdentity: NOT_VERIFIED`: acceptance of the selected sample does not accept a new script's sound, prove identity across text or complete audiovisual review.
+
 ## Boundaries
 
+New tasks inherit `brand.visualStyle: "editorial-v2"`; existing frozen tasks without it remain unchanged, including active-policy tasks resumed through init. Use the user's problem → approach → visible result → how to start as a story guide, with real product evidence and a separately labelled example. The shared visual version supplies a larger evidence stage, distinct card proportions, directional evidence reveals, stable cards, restrained website entry and non-italic title hierarchy. It is still a visual candidate until the requested key-frame/sample review is accepted; a default style value is not an aesthetic PASS. Verify text against clipping ancestors as well as its own box, preserve existing body/title/label minimums while using the requested 30.8px subtitles, and inspect actual rendered previews for unintended cropping. Three regression layouts do not count as a new real-product holdout.
+
+When the current user locks a full recording, preserve its WAV, cues, profile/configuration and original provenance hashes. For an approved visual derivative, initialize a separate task and approve its complete copy, then run `video voice --project TARGET --reuse-from SOURCE`. This explicit same-repository Qwen route requires identical audible text, subtitles, settings, scene timing and directions. It copies the original recording and receipts byte-for-byte and creates a separate binding to the source context and approved target. Normal compose, QA, rendering and resume validate the binding, original files and local evidence snapshots. Any mismatch fails closed; never rewrite source receipts or copy hashes to force reuse. Chained reuse is unsupported; retain the original project in complete local backups. A review-only composition still does not prove normal production. Keep confirmed recordings and all old videos intact.
+
+A user's explicit selection of a whole author poster overrides the historical layered-ending default for that exact asset and task. Register the supplied image in the existing private catalog and freeze it in the job. Use a final `Scene.authorPosterAssetId` with a `reading-hold` action: display the complete image without retyped contacts or duplicated branding, with the same image blurred behind it to fill mismatched aspect ratios. Keep the poster after spoken content so captions cannot cover embedded contacts; do not silently discard narration or subtitles. Preserve original pixels and disclose the smaller readable text in portrait previews. An explicit crop/stretch choice requires a separately reviewed adaptation. Existing frozen scenes remain unchanged.
+
+For an authorized reframing candidate, `Asset.authorRegions` declares original-pixel `[left, top, right, bottom]` rectangles for `portrait` and `information`, plus the original width/height. The renderer uses the same untouched source image in both regions. Validate their bounds, aspect and complete information-panel visibility; visually confirm the face, logo, all five contact lines and QR are retained. Reframing does not authorize public distribution of the source or remove the independent silent reading hold. Do not apply one poster's coordinates to another image.
+
+When the user supplies a new voice reference, preserve and hash its original bytes in the project, inspect the actual audio and obtain its transcript locally. Use the existing local backend for a bounded candidate with already approved product copy; supplying a reference does not approve the newly synthesized voice. Keep the candidate and its source/parameters separate from `.tools/selected-voice.json` until the user accepts it. After explicit acceptance and production authorization, back up the old selection/configuration and bind the new receipt, exact audio and its actual model provenance; a Base-generated accepted sample must not be relabelled VoiceDesign. Reference conditioning is not a verified emotion or identity match, and algorithmic audio metrics cannot replace listening approval. Do not reuse an old voice selection receipt to claim acceptance of a new reference or output.
+
+The isolated `scripts/audition-qwen3-zh.py` CustomVoice/Dylan experiment remains
+available only within its own explicit audition authorization. Its native
+instruction support does not apply to Base reference synthesis. It is not the
+selected B production entry or a source of phoneme/word alignment, and its
+presence does not authorize new candidates after the user has selected B.
+
 - Prefer the repository CLI, HyperFrames, FFmpeg, and FFprobe.
-- Do not add paid APIs, ElevenLabs, Captions AI, Remotion, databases, cloud services, publishing, or unrelated project changes.
+- Do not enable paid APIs, ElevenLabs, Captions AI, Remotion, databases, cloud services, publishing, or unrelated project changes by default. Actual cost, external asset upload, renderer replacement, and public distribution require the task's explicit authorization.
 - Do not bypass login, CAPTCHA, paywalls, anti-bot controls, or access restrictions.
 - Do not expose credentials, cookies, private data, or absolute local paths in public-facing artifacts.
 - Do not use `license=unknown` material in final output.
 - Keep the Skill in this repository. Provide installation instructions only; never copy it to a global Skill directory without explicit authorization.
+- Owned code, technical documentation, and this Skill use Apache-2.0. Brand originals, derivatives, author images, previews, catalog, and private migration reports have separate rights and stay out of public Git/npm/Skill distribution unless explicitly authorized. A complete private backup includes ignored brand assets and all videos.
 
 ## Completion rule
 
 Report only commands and paths observed in current JSON evidence. A static Skill contract test does not prove end-to-end Skill behavior. Local benchmark success requires the applicable HyperFrames, media, asset-license, and independent visual scorecard gates to pass. The scorecard must identify the reviewer type and `humanReviewed`; a Codex review is not human review. Human review and a separate rights/publication decision remain required before external release, but their absence must not be disguised or used to mislabel a local-only result.
 
+For R2 report `MIGRATION`, `IP_LIBRARY`, `ENGINEERING_QA`, `VISUAL_REVIEW`, `VOICE_REVIEW`, and `USER_ACCEPTANCE` separately using `PASS`, `PARTIAL`, `FAIL`, or `NOT_RUN`. Accepted engineering cannot override rejected or unreviewed audiovisual output. Keep batch production disabled and obey the current task’s explicit publishing authorization; publishing is disabled by default.
+
 ## Required handoff
 
 Return the observed Studio preview URL or `NOT_RUNNING`, final MP4 path or missing status, `DESIGN.md`, `SCRIPT.md`, `STORYBOARD.md`, `video-spec.json`, contact sheet, `qa-report.json`, `scorecard.json`, and `run-report.json`. The current repository CLI does not start Studio preview or create the independent visual scorecard. Report a missing artifact as outstanding; when a Codex scorecard exists, report it as independent model review with `humanReviewed: false` and keep the local-only publication boundary explicit.
+
+Current refinement: align the header logo and main title at the left edge. Subtitles alone use 30.8px (70% of 44px); keep other type minimums. Use bold card titles, readable sentences and quieter metadata. Reveal evidence along the flow direction with synchronized connectors and stable card positions. The visible CTA is “访问恩禾官网，获取更多AI工具和解决方案。”; keep accepted narration unchanged. A trusted screen-only policy revision can reuse identical voice evidence, with source/target approvals and all audible rules still strictly checked.

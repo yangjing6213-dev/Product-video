@@ -101,7 +101,9 @@ test("ships five versioned prompts with explicit inputs, outputs, and evidence b
 
   for (const file of files) {
     const prompt = readFileSync(join(promptDirectory, file), "utf8");
-    assert.match(prompt, /^---\r?\n[\s\S]*?^version: 1\.0\.0\r?$/m, `${file} version`);
+    const expectedVersion = file === "script-writer.v1.md" ? "1\\.2\\.0"
+      : file === "storyboard-director.v1.md" ? "1\\.2\\.0" : file === "composition-builder.v1.md" ? "1\\.1\\.0" : "1\\.0\\.0";
+    assert.match(prompt, new RegExp(`^---\\r?\\n[\\s\\S]*?^version: ${expectedVersion}\\r?$`, "m"), `${file} version`);
     assert.match(prompt, /^## Inputs$/m, `${file} inputs`);
     assert.match(prompt, /^## Output contract$/m, `${file} output contract`);
     assert.match(prompt, /evidence|证据|来源/i, `${file} evidence boundary`);
@@ -211,15 +213,23 @@ test("usage documentation matches the implemented CLI command surface and resume
   assert.doesNotMatch(workflow, /only `render` and `run` use `--resume`/);
 });
 
-test("a new Chinese narration request retrieves local setup, measured cues, and audio QA", () => {
+test("current jobs use the normal voice route while direct synthesis remains historical", () => {
   const skill = read("skills/enhe-product-video/SKILL.md");
   const workflow = read("skills/enhe-product-video/references/workflow.md");
+  const inputContract = read("skills/enhe-product-video/references/input-contract.md");
   const qaChecklist = read("skills/enhe-product-video/references/qa-checklist.md");
   const ttsGuide = read("docs/guides/CHINESE-TTS.md");
 
   assert.match(skill, /中文旁白[\s\S]*CHINESE-TTS\.md/);
-  assert.match(workflow, /setup-tts\.mjs --verify-only/);
-  assert.match(workflow, /synthesize-zh\.py/);
+  assert.match(workflow, /npm run video -- voice --project <id>/);
+  assert.doesNotMatch(workflow, /synthesize-zh\.py/);
+  assert.doesNotMatch(workflow, /editable portrait/i);
+  assert.match(workflow, /author ending[^\n]*complete five-item editable contact text/i);
+  assert.match(workflow, /Do not add a portrait/i);
+  assert.doesNotMatch(qaChecklist, /editable portrait/i);
+  assert.match(qaChecklist, /author ending[^\n]*complete five-item editable contact text/i);
+  assert.match(qaChecklist, /Do not require or add a portrait/i);
+  assert.match(inputContract, /`hyperframes`:[^\n]*(legacy|historical)[^\n]*(current|video voice)/i);
   assert.match(workflow, /phrase|句级/i);
   assert.match(workflow, /ASR[\s\S]*逐词/i);
   assert.match(workflow, /audio[\s\S]*字幕[\s\S]*(hash|SHA-256)/i);
@@ -228,8 +238,19 @@ test("a new Chinese narration request retrieves local setup, measured cues, and 
   assert.match(qaChecklist, /boundary|边界/i);
   assert.match(qaChecklist, /reverse.seek|反向跳转/i);
   assert.match(qaChecklist, /听审[\s\S]*NOT_RUN/i);
-  assert.match(ttsGuide, /prepare-zh-variants\.mjs/);
-  assert.match(ttsGuide, /run --project \$id --resume --supplied-only/);
+
+  const currentMarker = ttsGuide.indexOf("## 当前新任务入口");
+  const historicalMarker = ttsGuide.indexOf("## 历史基准重放");
+  assert.ok(currentMarker >= 0, "Chinese TTS guide must identify the current entry point");
+  assert.ok(historicalMarker > currentMarker, "historical benchmark instructions must follow the current route");
+  const currentSection = ttsGuide.slice(currentMarker, historicalMarker);
+  const historicalSection = ttsGuide.slice(historicalMarker);
+  assert.match(currentSection, /npm run video -- voice --project <id>/);
+  assert.doesNotMatch(currentSection, /prepare-zh-variants\.mjs|synthesize-zh\.py|build-benchmark-compositions\.mjs/);
+  assert.match(historicalSection, /prepare-zh-variants\.mjs/);
+  assert.match(historicalSection, /synthesize-zh\.py/);
+  assert.match(historicalSection, /run --project \$id --resume --supplied-only/);
+  assert.match(workflow, /post-authoring deterministic chain/i);
 });
 
 test("Chinese narration guidance does not invent an ENHE Chinese brand name", () => {

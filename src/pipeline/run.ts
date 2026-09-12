@@ -1,15 +1,24 @@
 import { copyFile, mkdir, open, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
+import { productInputFromSpec, freezeGeneratorProject, assertGeneratorSnapshot, composeProject } from './generator.ts';
+import { assessAcceptance } from '../quality/plan.ts';
 import type { ProductInput, CheckResult } from '../contracts.ts';
 import { checkAssets } from '../qa/checks.ts';
 import { atomicJson, digest, exists, hashFiles, readState, runStage } from './stage-state.ts';
 import { REPO, command, ensureSuccess, environment, filesUnder, hyperframes, recordCommand } from './tools.ts';
-import { inputFor, manifest, specFor } from './project.ts';
+import { inputFor, manifest, specFor, verifyProjectBrand } from './project.ts';
 import { captureWithFallback, requireCreative, selectNarration } from './gates.ts';
 import { compositionQa, writeQa } from './qa.ts';
 import { contactSheet, probeMedia, verifyMedia } from './media.ts';
+import { assertApprovedTranscript, assertVideoSpecCopyApproved } from '../quality/copy.ts';
+import { isActiveGeneratorPolicy, trustedGeneratorPolicy } from '../quality/policy.ts';
+import { loadQwenEvidence, qwenEvidenceInputs } from '../qa/qwen-narration.ts';
+import { narrationEvidenceContext, voiceReuseEvidenceInputs } from './voice-reuse.ts';
 import {
+  narrationTimelineEnd,
   validateNarrationCues,
+  validateCurrentNarrationEvidence,
   validatePhraseTranscript,
   validateTranscriptTiming,
   type NarrationCues,
@@ -23,11 +32,12 @@ export const STAGE_CONTRACT_VERSIONS = {
   qa: 3,
   draft: 1,
   final: 1,
-  media: 2,
+  media: 3,
 } as const;
 type PipelineStage = keyof typeof STAGE_CONTRACT_VERSIONS;
 
 export async function preflight(project: string): Promise<string[]> {
+  await verifyProjectBrand(project);
   const input = await inputFor(project);
   const checks = await checkAssets(input, project);
   const env = await environment();
@@ -203,18 +213,6 @@ export async function captureProject(project: string, suppliedOnly = false): Pro
 
 interface DoctorCheck { name?: string; ok?: boolean }
 interface ListedVoice { id?: string; language?: string; defaultLang?: string }
-function productInputFromSpec(spec: Awaited<ReturnType<typeof specFor>>): ProductInput {
-  return {
-    schemaVersion: spec.schemaVersion,
-    projectId: spec.projectId,
-    product: spec.product,
-    brand: spec.brand,
-    assets: spec.assets,
-    output: spec.output,
-    audio: spec.audio,
-    captions: spec.captions,
-  };
-}
 
 function parseJsonOutput<T>(stdout: string, label: string): T {
   try {
@@ -243,7 +241,8 @@ async function narrationTiming(
   if (!await exists(transcriptFile)) throw new Error('Narration requires transcript.json with real measured or ASR timing before rendering');
   const transcriptBytes = await readFile(transcriptFile);
   const words = validateTranscriptTiming(parseJsonOutput<unknown>(transcriptBytes.toString('utf8'), 'Transcript'), duration);
-  const sceneEnd = spec.scenes.at(-1)?.actualEndSec;
+  const approvedCopy = await assertApprovedTranscript(path.resolve(project, '../..'), project, spec, words);
+  const sceneEnd = narrationTimelineEnd(spec);
   if (sceneEnd === null || sceneEnd === undefined || Math.abs(sceneEnd - duration) > 0.5) {
     throw new Error(`Narration duration ${duration}s does not match scene timing ${sceneEnd ?? 'missing'}s; update video-spec.json from real audio timing`);
   }
@@ -251,13 +250,31 @@ async function narrationTiming(
   const cueFile = path.join(project, 'reports/narration-cues.json');
   let cues: NarrationCues | null = null;
   let cuesSha256: string | null = null;
+  let qwenTextReview: { asrTextMatch: string; asrOmittedDiscourseTokens: unknown[] } | undefined;
   if (allowPhraseCues && await exists(cueFile)) {
     const cueBytes = await readFile(cueFile);
-    cues = validateNarrationCues(parseJsonOutput<unknown>(cueBytes.toString('utf8'), 'Narration cues'), spec, audioSha256, duration);
+    const cueEvidence = parseJsonOutput<unknown>(cueBytes.toString('utf8'), 'Narration cues');
+    cues = validateNarrationCues(cueEvidence, spec, audioSha256, duration);
     validatePhraseTranscript(words, cues);
+    const timingBytes = cues.timingEvidence ? await readFile(path.join(project, cues.timingEvidence.path)) : null;
+    if (cues.timingEvidence && digest(timingBytes!) !== cues.timingEvidence.sha256) throw new Error('Provider timing evidence hash changed');
+    const generationFile = path.join(project, 'reports/tts-generation.json');
+    const qwenFiles = await loadQwenEvidence(project, spec, cueEvidence);
+    const context = await narrationEvidenceContext(project, spec, approvedCopy.copySha256);
+    validateCurrentNarrationEvidence(cueEvidence, context.spec, {
+      generation: await exists(generationFile) ? parseJsonOutput<unknown>(await readFile(generationFile, 'utf8'), 'TTS generation evidence') : undefined,
+      providerTiming: timingBytes ? parseJsonOutput<unknown>(timingBytes.toString('utf8'), 'Provider timing evidence') : undefined,
+      expectedCopySha256: context.copySha256,
+      expectedScriptSha256: context.scriptSha256,
+      qwenFiles,
+    });
+    if (qwenFiles) qwenTextReview = { asrTextMatch: qwenFiles.alignment.lexicalMatch,
+      asrOmittedDiscourseTokens: qwenFiles.alignment.omittedDiscourseTokens ?? [] };
     cuesSha256 = digest(cueBytes);
   }
+  if (isActiveGeneratorPolicy(spec.generatorPolicy) && !cues) throw new Error('Current narration requires bound provider or ASR cue evidence; a transcript alone does not prove ASR ran');
   return {
+    copySha256: approvedCopy.copySha256,
     durationSec: duration,
     transcriptEntryCount: words.length,
     wordCount: cues ? null : words.length,
@@ -269,14 +286,27 @@ async function narrationTiming(
     cueCount: cues?.cues.length ?? null,
     timingSource: cues?.timingSource ?? 'whisper-cpp-asr',
     transcriptGranularity: cues ? 'phrase' : 'word',
-    transcriptSource: cues ? 'measured-tts-segments' : 'whisper-cpp-asr',
-    asrStatus: cues ? 'NOT_RUN' : 'PASS',
+    transcriptSource: cues?.timingSource === 'whisper-cpp-asr' ? 'whisper-cpp-phrase-alignment' : cues?.timingSource === 'provider-phoneme-timing' ? 'provider-phoneme-sentence-alignment' : cues ? 'measured-tts-segments' : 'whisper-cpp-asr',
+    asrStatus: cues && cues.timingSource !== 'whisper-cpp-asr' ? 'NOT_RUN' : 'PASS',
     generator: cues?.generator ?? null,
+    ...qwenTextReview,
   };
+}
+
+export async function narrationTimingEvidenceInputs(project: string): Promise<string[]> {
+  const cueFile = path.join(project, 'reports/narration-cues.json');
+  if (!await exists(cueFile)) return [];
+  let relative: unknown;
+  try { relative = JSON.parse(await readFile(cueFile, 'utf8')).timingEvidence?.path; } catch { return []; }
+  if (typeof relative !== 'string' || /^(?:[A-Za-z]:|[\\/])|\.\.|[\\]/.test(relative)) return [];
+  const file = path.resolve(project, relative);
+  if (!file.startsWith(path.resolve(project) + path.sep) || !await exists(file)) return [];
+  return [file];
 }
 
 async function voice(project: string): Promise<string[]> {
   const spec = await specFor(project);
+  await assertVideoSpecCopyApproved(path.resolve(project, '../..'), project, spec);
   const report = path.join(project, 'reports/voice-report.json');
   if (spec.audio.narrationMode === 'none') {
     const mode = selectNarration('none', false, false);
@@ -317,6 +347,7 @@ async function voice(project: string): Promise<string[]> {
     }
   }
 
+  if (spec.generatorPolicy) throw new Error('Current Mandarin tasks require an explicit local voice profile via the normal voice command or hash-bound external audio; built-in provider fallback is disabled');
   const doctor = await hyperframes(['doctor', '--json']);
   const doctorReport = await recordCommand(project, 'tts-doctor', doctor);
   const listing = await hyperframes(['tts', '--list', '--json']);
@@ -345,7 +376,7 @@ async function voice(project: string): Promise<string[]> {
     : [];
   const selectedVoice = spec.audio.voice
     ? matchingVoices.find(voice => voice.id === spec.audio.voice)
-    : matchingVoices[0];
+    : spec.generatorPolicy ? undefined : matchingVoices[0];
   if (!ttsAvailable || !transcriptAvailable || !selectedVoice?.id) {
     const unavailable = [
       ...(!ttsAvailable ? ['Kokoro TTS'] : []),
@@ -444,7 +475,16 @@ export async function renderProject(
   resume = true,
   compositionAlreadyChecked = false,
 ): Promise<string> {
+  await verifyProjectBrand(project);
   const spec = await specFor(project);
+  if (spec.generatorPolicy) {
+    await freezeGeneratorProject(project);
+    if (quality === 'high') {
+      if (!isActiveGeneratorPolicy(spec.generatorPolicy)) throw new Error('High-quality production requires the current generator policy; trusted v1 snapshots are local technical replays only');
+      const review = await assessAcceptance(path.resolve(project, '../..'), project);
+      if (review.visualReview.status !== 'PASS' || review.voiceReview.status !== 'PASS') throw new Error('High-quality production requires current human visual and voice approval; use a draft for the concentrated review');
+    }
+  }
   const sources = [
     path.join(project, 'video-spec.json'),
     path.join(project, 'DESIGN.md'),
@@ -459,8 +499,10 @@ export async function renderProject(
   const output = path.join(project, 'renders', quality === 'draft' ? 'draft.mp4' : 'final.mp4');
   const stage = quality === 'draft' ? 'draft' : 'final';
   await runStage(project, stage, fingerprint, resume, async () => {
+    await assertVideoSpecCopyApproved(path.resolve(project, '../..'), project, spec);
     if (!compositionAlreadyChecked) await compositionQa(project, spec);
     await mkdir(path.dirname(output), { recursive: true });
+    if (spec.generatorPolicy && await exists(output)) throw new Error('Existing video preserved; use --resume with an unchanged snapshot or create a new variant');
     const result = await hyperframes(['render', project, '--quality', quality, '--fps', '30', '--workers', '4', '--output', output, '--strict'], REPO, 1200000);
     await recordCommand(project, `render-${quality}`, result);
     if (result.exitCode !== 0) {
@@ -468,10 +510,12 @@ export async function renderProject(
       await recordCommand(project, 'failure-info', await hyperframes(['info', project]));
     }
     ensureSuccess(result, 'Render');
+    if (spec.generatorPolicy) await assertGeneratorSnapshot(project);
     const checks = await verifyMedia(output, project, spec);
     await atomicJson(path.join(project, `reports/${quality}-media-report.json`), { status: checks.some(c => c.status === 'FAIL') ? 'FAIL' : 'PASS', checks });
     if (checks.some(c => c.status === 'FAIL')) throw new Error('Render produced invalid media; see media report');
-    await atomicJson(path.join(project, `reports/render-${quality}-report.json`), { quality, output: path.relative(project, output), durationMs: result.durationMs, exitCode: result.exitCode });
+    await atomicJson(path.join(project, `reports/render-${quality}-report.json`), { quality, output: path.relative(project, output).replaceAll('\\', '/'), durationMs: result.durationMs, exitCode: result.exitCode,
+      videoSha256: digest(await readFile(output)), specSha256: digest(await readFile(path.join(project, 'video-spec.json'))), entrySha256: digest(await readFile(path.join(project, 'index.html'))) });
     const mediaReport = path.join(project, `reports/${quality}-media-report.json`);
     const renderReport = path.join(project, `reports/render-${quality}-report.json`);
     const commandReport = path.join(project, `reports/commands/render-${quality}.json`);
@@ -492,9 +536,20 @@ export async function renderProject(
   return output;
 }
 
-export async function runProject(project: string, resume: boolean, suppliedOnly = false): Promise<string> {
+export async function runProject(project: string, resume: boolean, suppliedOnly = false, quality: 'draft' | 'high' = 'draft'): Promise<string> {
+  await verifyProjectBrand(project);
   const runStarted = performance.now();
   const input = await inputFor(project);
+  if (input.generatorPolicy && !isActiveGeneratorPolicy(input.generatorPolicy)) {
+    if (!trustedGeneratorPolicy(input.generatorPolicy)) throw new Error('Unknown or modified generator policy cannot be resumed');
+    if (!await exists(path.join(project, 'resolved-creative-plan.json'))) {
+      throw new Error('Trusted v1 local replay requires an existing frozen plan');
+    }
+    await assertGeneratorSnapshot(project);
+    if (quality === 'high') {
+      throw new Error('High-quality production requires the current generator policy; trusted v1 snapshots are local technical replays only');
+    }
+  }
   const inputHash = await hashFiles([path.join(project, 'input/product-input.json'), ...input.assets.map(a => path.join(project, a.path)).filter(existsSyncFile)], { version: '1.0' });
   const run = async (name: PipelineStage, hash: string, work: () => Promise<string[]>) => runStage(
     project,
@@ -520,7 +575,7 @@ export async function runProject(project: string, resume: boolean, suppliedOnly 
     const creativeHash = await hashFiles(creative, { inputHash });
     await run('creative', creativeHash, async () => {
       const authored = await specFor(project);
-      if (JSON.stringify(productInputFromSpec(authored)) !== JSON.stringify(input)) {
+      if (!isDeepStrictEqual(productInputFromSpec(authored), input)) {
         throw new Error('Creative artifacts do not match current product input; refresh DESIGN.md, SCRIPT.md, STORYBOARD.md and video-spec.json');
       }
       return creative;
@@ -532,8 +587,15 @@ export async function runProject(project: string, resume: boolean, suppliedOnly 
       if (external && existsSyncFile(path.join(project, external.path))) voiceInputs.push(path.join(project, external.path));
       if (existsSyncFile(path.join(project, 'transcript.json'))) voiceInputs.push(path.join(project, 'transcript.json'));
       if (existsSyncFile(path.join(project, 'reports/narration-cues.json'))) voiceInputs.push(path.join(project, 'reports/narration-cues.json'));
+      if (existsSyncFile(path.join(project, 'reports/tts-generation.json'))) voiceInputs.push(path.join(project, 'reports/tts-generation.json'));
+      if (existsSyncFile(path.join(project, 'input/narration-script.json'))) voiceInputs.push(path.join(project, 'input/narration-script.json'));
+      voiceInputs.push(...await narrationTimingEvidenceInputs(project));
+      voiceInputs.push(...await qwenEvidenceInputs(project, spec));
+      voiceInputs.push(...await voiceReuseEvidenceInputs(project));
     }
-    await run('voice', await hashFiles(voiceInputs, { narrationMode: spec.audio.narrationMode }), () => voice(project));
+    await run('voice', await hashFiles(voiceInputs, { narrationMode: spec.audio.narrationMode,
+      ...(spec.generatorPolicy ? { currentNarrationEvidenceVersion: 1 } : {}) }), () => voice(project));
+    if (spec.generatorPolicy) await composeProject(project);
     const sourceHash = await hashFiles([
       path.join(project, 'index.html'),
       ...creative,
@@ -547,6 +609,7 @@ export async function runProject(project: string, resume: boolean, suppliedOnly 
       ...(existsSyncFile(path.join(project, 'reports/lint-warning-review.json'))
         ? [path.join(project, 'reports/lint-warning-review.json')]
         : []),
+      ...await voiceReuseEvidenceInputs(project),
     ]);
     await runStage(project, 'qa', sourceHash, resume, async () => ({
       checks: await compositionQa(project, spec),
@@ -555,8 +618,8 @@ export async function runProject(project: string, resume: boolean, suppliedOnly 
         ...['lint', 'validate', 'inspect'].map(label => path.join(project, `reports/commands/hyperframes-${label}.json`)),
       ],
     }), STAGE_CONTRACT_VERSIONS.qa);
-    await renderProject(project, 'draft', resume, true);
-    const final = await renderProject(project, 'high', resume, true);
+    const draft = await renderProject(project, 'draft', resume, true);
+    const final = quality === 'high' || !spec.generatorPolicy ? await renderProject(project, 'high', resume, true) : draft;
     await run('media', await hashFiles([final, path.join(project, 'video-spec.json')]), async () => {
       const previous = JSON.parse(await readFile(path.join(project, 'reports/qa-report.json'), 'utf8')) as { checks: CheckResult[] };
       const checks = [...previous.checks, ...await verifyMedia(final, project, spec)];
@@ -568,6 +631,7 @@ export async function runProject(project: string, resume: boolean, suppliedOnly 
         path.join(project, 'reports/media-probe.json'),
         path.join(project, 'reports/commands/ffprobe.json'),
         path.join(project, 'reports/commands/ffmpeg-decode-black-silence.json'),
+        path.join(project, 'reports/audio-binding.json'),
         await contactSheet(final, project, spec),
         path.join(project, 'reports/commands/contact-sheet.json'),
       ];

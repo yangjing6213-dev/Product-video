@@ -1,0 +1,15 @@
+{
+  "version": "EPVS-GENERATOR-QUALITY-003.v1",
+  "audience": "ordinary-ai-users",
+  "marketing": {
+    "brand": "恩禾 ENHE AI",
+    "url": "https://www.enhe-tech.com.cn",
+    "displayDomain": "www.enhe-tech.com.cn",
+    "screenAction": "访问恩禾官网，了解产品与使用方式。",
+    "spokenAction": "更多 AI 工具和使用方法，到恩禾官网看看。"
+  },
+  "authorEnding": "contacts-secondary",
+  "voiceAcceptance": "REQUIRED",
+  "subtitles": "transparent",
+  "ipCharacters": "off"
+}

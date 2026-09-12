@@ -10,7 +10,9 @@ import { main } from '../../src/cli.ts';
 import { initialize } from '../../src/pipeline/project.ts';
 import { verifyMedia } from '../../src/pipeline/media.ts';
 import { sourceChecks } from '../../src/pipeline/qa.ts';
-import { captureProject, extractCaptureEvidence, renderProject, runProject, STAGE_CONTRACT_VERSIONS } from '../../src/pipeline/run.ts';
+import { captureProject, extractCaptureEvidence, renderProject as renderApprovedFixture, runProject as runApprovedFixture, STAGE_CONTRACT_VERSIONS } from '../../src/pipeline/run.ts';
+import { copyDraftFromVideoSpec, freezeCopyDraft, recordCopyDecision, assessCopyReview } from '../../src/quality/copy.ts';
+import { ACTIVE_GENERATOR_POLICY } from '../../src/quality/policy.ts';
 import { digest, hashFiles, readState, runStage, type RunState } from '../../src/pipeline/stage-state.ts';
 import {
   command,
@@ -27,6 +29,25 @@ interface ProjectFixture {
   input: ProductInput;
   spec: VideoSpec;
   asset: string;
+}
+
+// These pre-existing pipeline tests exercise later stages using explicitly approved test-only copy.
+// Missing/rejected/stale copy is tested through the real entry points in quality/copy-generation.test.ts.
+async function approveFixtureCopy(project: string): Promise<void> {
+  assert.match(path.basename(project), /^(epvs pipeline with spaces |integration-)/);
+  let spec: VideoSpec;
+  try { spec = JSON.parse(await readFile(path.join(project, 'video-spec.json'), 'utf8')) as VideoSpec; }
+  catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return; throw error; }
+  const root = path.resolve(project, '../..');
+  const copy = await freezeCopyDraft(root, project, copyDraftFromVideoSpec(spec, 'TEST-COPY-v1'));
+  if ((await assessCopyReview(root, project)).status !== 'PASS') await recordCopyDecision(root, project, {
+    decision: 'ACCEPTED', copySha256: copy.copySha256, userInstruction: 'TEST FIXTURE ONLY: pipeline regression copy approved.' });
+}
+async function runProject(...args: Parameters<typeof runApprovedFixture>) {
+  await approveFixtureCopy(args[0]); return runApprovedFixture(...args);
+}
+async function renderProject(...args: Parameters<typeof renderApprovedFixture>) {
+  await approveFixtureCopy(args[0]); return renderApprovedFixture(...args);
 }
 
 function pngIhdr(width: number, height: number): Buffer {
@@ -190,15 +211,17 @@ test('initialize is idempotent for the same source input and never overwrites ex
   const input = structuredClone(validProductInput);
   input.projectId = `integration-${randomUUID()}`;
   input.assets = [{ ...input.assets[0]!, path: 'Source Logo.svg' }];
+  input.brandLibrary = { selections: [], omissionReason: 'Product-only integration fixture' };
+  await writeJson(path.join(source, 'assets/brand/enhe/ip/catalog.json'), { schemaVersion: '1.0', libraryVersion: 'test-v1', assets: [] });
   await writeFile(path.join(source, 'Source Logo.svg'), '<svg>original</svg>');
   const inputFile = path.join(source, 'product input.json');
   await writeJson(inputFile, input);
-  const expectedProject = path.join(REPO, 'projects', input.projectId);
+  const expectedProject = path.join(source, 'projects', input.projectId);
 
   try {
-    const project = await initialize(inputFile);
+    const project = await initialize(inputFile, source);
     await writeFile(path.join(project, 'USER-NOTES.md'), 'preserve me');
-    assert.equal(await initialize(inputFile), project);
+    assert.equal(await initialize(inputFile, source), project);
     assert.equal(await readFile(path.join(project, 'USER-NOTES.md'), 'utf8'), 'preserve me');
     assert.equal(await readFile(path.join(project, 'assets/brand-logo.svg'), 'utf8'), '<svg>original</svg>');
   } finally {
@@ -253,12 +276,14 @@ test('direct verify-input, capture, and qa commands honor --resume stage reuse',
   const input = structuredClone(validProductInput);
   input.projectId = `integration-${randomUUID()}`;
   input.brand.fontFamilies = ['Microsoft YaHei', 'Segoe UI'];
+  input.brandLibrary = { selections: [], omissionReason: 'Product-only integration fixture' };
+  await writeJson(path.join(source, 'assets/brand/enhe/ip/catalog.json'), { schemaVersion: '1.0', libraryVersion: 'test-v1', assets: [] });
   input.assets = [{ ...input.assets[0]!, type: 'screenshot', path: 'Incoming Logo.svg', fallbackAssetId: null }];
   input.product.features[0]!.evidenceAssetIds = ['brand-logo'];
   await writeFile(path.join(source, 'Incoming Logo.svg'), '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="white"/></svg>');
   const inputFile = path.join(source, 'product input.json');
   await writeJson(inputFile, input);
-  const project = await initialize(inputFile);
+  const project = await initialize(inputFile, source);
   const canonicalInput = JSON.parse(await readFile(path.join(project, 'input/product-input.json'), 'utf8')) as ProductInput;
   const spec = structuredClone(validVideoSpec);
   Object.assign(spec, {
@@ -296,13 +321,13 @@ test('direct verify-input, capture, and qa commands honor --resume stage reuse',
     return fakeResult(args, 0, ['lint', 'inspect'].includes(args[1] ?? '') ? JSON.stringify({ issues: [] }) : '');
   });
   try {
-    await main(['verify-input', '--project', input.projectId, '--resume']);
-    await main(['capture', '--project', input.projectId, '--supplied-only', '--resume']);
-    await main(['qa', '--project', input.projectId, '--resume']);
+    await main(['verify-input', '--project', input.projectId, '--project-root', source, '--resume']);
+    await main(['capture', '--project', input.projectId, '--project-root', source, '--supplied-only', '--resume']);
+    await main(['qa', '--project', input.projectId, '--project-root', source, '--resume']);
     allowCommands = false;
-    await main(['verify-input', '--project', input.projectId, '--resume']);
-    await main(['capture', '--project', input.projectId, '--supplied-only', '--resume']);
-    await main(['qa', '--project', input.projectId, '--resume']);
+    await main(['verify-input', '--project', input.projectId, '--project-root', source, '--resume']);
+    await main(['capture', '--project', input.projectId, '--project-root', source, '--supplied-only', '--resume']);
+    await main(['qa', '--project', input.projectId, '--project-root', source, '--resume']);
   } finally {
     restore();
     console.log = originalLog;
@@ -898,10 +923,8 @@ test('available local narration runtime generates audio, transcribes it and vali
       return fakeResult(args, 0, JSON.stringify({ ok: true }));
     }
     if (subcommand === 'transcribe') {
-      await writeJson(path.join(fixture.project, 'transcript.json'), [
-        { text: '真实', start: 0, end: 20 },
-        { text: '旁白', start: 20, end: 44.5 },
-      ]);
+      await writeJson(path.join(fixture.project, 'transcript.json'), fixture.spec.scenes.map((scene, index) =>
+        ({ text: scene.voiceover, start: index * 9, end: index * 9 + 8.5 })));
       return fakeResult(args, 0, JSON.stringify({ ok: true }));
     }
     if (args.includes('-show_streams')) {
@@ -927,6 +950,67 @@ test('available local narration runtime generates audio, transcribes it and vali
   assert.equal(report.generatedAudio, true);
   assert.equal(report.voice, 'zf_xiaobei');
   assert.equal((await readState(fixture.project)).stages.voice?.status, 'PASS');
+});
+
+async function uncheckedTranscriptFixture() {
+  const fixture = await makeProject({ creative: true });
+  fixture.spec.audio.narrationMode = 'external-audio';
+  fixture.spec.audio.externalAudioAssetId = 'review-audio';
+  fixture.spec.scenes.forEach((scene, index) => { scene.voiceover = `已认可的第${index + 1}句。`; });
+  fixture.spec.assets.push({ id: 'review-audio', type: 'audio', path: 'assets/review.wav', sourceUrl: '', license: 'owned', required: true, fallbackAssetId: null });
+  fixture.input.audio = fixture.spec.audio; fixture.input.assets = fixture.spec.assets;
+  await writeJson(path.join(fixture.project, 'input/product-input.json'), fixture.input);
+  await writeJson(path.join(fixture.project, 'video-spec.json'), fixture.spec);
+  await writeFile(path.join(fixture.project, 'assets/review.wav'), 'isolated audio fixture');
+  const transcript = [{ text: '未经认可的字幕和承诺。', start: 0, end: 44.5 }];
+  await writeJson(path.join(fixture.project, 'transcript.json'), transcript);
+  await approveFixtureCopy(fixture.project);
+  return fixture;
+}
+
+test('external audio without phrase cues cannot pass voice with unapproved transcript words', async () => {
+  const fixture = await uncheckedTranscriptFixture();
+  await seedThroughCreative(fixture);
+  const restore = installCommandRunnerForTests(async (_executable, args) => {
+    if (args.includes('-show_streams')) return fakeResult(args, 0, JSON.stringify({ format: { duration: 45 }, streams: [{ codec_type: 'audio' }] }));
+    throw new Error('No browser or renderer expected');
+  });
+  try { await assert.rejects(runProject(fixture.project, true, true), /transcript.*approved.*subtitle/i); }
+  finally { restore(); }
+  assert.equal((await readState(fixture.project)).stages.voice?.status, 'FAIL');
+});
+
+test('source QA rejects correctly hashed ASR evidence when transcript words differ from approved copy', async () => {
+  const fixture = await uncheckedTranscriptFixture();
+  await writeJson(path.join(fixture.project, 'reports/voice-report.json'), {
+    status: 'PASS', durationSec: 45,
+    audioSha256: digest(await readFile(path.join(fixture.project, 'assets/review.wav'))),
+    transcriptSha256: digest(await readFile(path.join(fixture.project, 'transcript.json'))),
+    timingSource: 'whisper-cpp-asr', transcriptGranularity: 'word', transcriptSource: 'whisper-cpp-asr', asrStatus: 'PASS',
+  });
+  const checks = await sourceChecks(fixture.project, fixture.spec);
+  const evidence = checks.find(check => check.id === 'narration.evidence');
+  assert.equal(evidence?.status, 'FAIL');
+  assert.match(evidence?.message ?? '', /transcript.*approved.*subtitle/i);
+});
+
+test('current narration cannot claim ASR PASS from matching transcript text without actual cue evidence', async () => {
+  const fixture = await makeProject({ creative: true });
+  fixture.spec.generatorPolicy = structuredClone(ACTIVE_GENERATOR_POLICY);
+  fixture.spec.audio.narrationMode = 'external-audio'; fixture.spec.audio.externalAudioAssetId = 'review-audio';
+  fixture.spec.scenes.forEach((scene, index) => { scene.voiceover = `第${index + 1}句。`; });
+  fixture.spec.assets.push({ id: 'review-audio', type: 'audio', path: 'assets/review.wav', sourceUrl: '', license: 'owned', required: true, fallbackAssetId: null });
+  await writeJson(path.join(fixture.project, 'video-spec.json'), fixture.spec);
+  await writeFile(path.join(fixture.project, 'assets/review.wav'), 'synthetic audio fixture');
+  await writeJson(path.join(fixture.project, 'transcript.json'), [{ text: fixture.spec.scenes.map(scene => scene.voiceover).join(''), start: 0, end: 44.5 }]);
+  await approveFixtureCopy(fixture.project);
+  await writeJson(path.join(fixture.project, 'reports/voice-report.json'), {
+    status: 'PASS', durationSec: 45, audioSha256: digest(await readFile(path.join(fixture.project, 'assets/review.wav'))),
+    transcriptSha256: digest(await readFile(path.join(fixture.project, 'transcript.json'))),
+    timingSource: 'whisper-cpp-asr', transcriptGranularity: 'word', transcriptSource: 'whisper-cpp-asr', asrStatus: 'PASS',
+  });
+  const evidence = (await sourceChecks(fixture.project, fixture.spec)).find(check => check.id === 'narration.evidence');
+  assert.equal(evidence?.status, 'FAIL'); assert.match(evidence?.message ?? '', /transcript alone does not prove ASR/);
 });
 
 test('measured phrase narration binds hashes and blocks a composition without its audio track', async () => {

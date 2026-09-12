@@ -1,6 +1,6 @@
 # 持续集成
 
-GitHub Actions 在主分支 Push、Pull Request 和手动运行时检查公开源码。工作流是 [.github/workflows/ci.yml](../../.github/workflows/ci.yml)，使用一个标准 Windows 2025 runner、Node 24.19.0 和 Python 3.12.14。
+GitHub Actions 在主分支 Push、Pull Request 和手动运行时检查公开源码。工作流是 [.github/workflows/ci.yml](../../.github/workflows/ci.yml)，使用一个标准 Windows 2025 runner、Node 24.19.0 和 Python 3.13.15。
 
 检查包括：锁文件安装、类型检查、源码与契约 Lint、TypeScript 测试、真实 Chrome 排版测试、Python 迁移和语音契约测试、依赖风险回归、npm 漏洞审计，以及实际 npm 压缩包的公开内容边界。项目直接运行 TypeScript，没有单独构建命令，也没有配置覆盖率门槛。
 

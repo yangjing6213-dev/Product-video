@@ -11,7 +11,7 @@ import { composeVideo } from '../../src/quality/composition.ts';
 import { browserQa } from '../../src/qa/browser.ts';
 import { ACTIVE_GENERATOR_POLICY } from '../../src/quality/policy.ts';
 import { validVideoSpec } from '../fixtures/input.ts';
-import { requireFixtureFont, TEST_CJK_FONT, writeBrowserAssets } from '../fixtures/browser-assets.ts';
+import { FIXTURE_FONTS, requireFixtureFont, TEST_CJK_FONT, writeBrowserAssets } from '../fixtures/browser-assets.ts';
 
 before(requireFixtureFont);
 
@@ -90,7 +90,7 @@ async function prepareFixture(width: 1920 | 1080, workflowPresentation = false, 
   }
   const html = composeVideo(spec, {
     gsapPath: 'assets/gsap.min.js',
-    fonts: [],
+    fonts: FIXTURE_FONTS,
     narration: { path: 'assets/silence.wav', cues: boundaryCaptions ? [
       { id: 'proof-caption', sceneId: 'proof', text: '先检查真实素材。', start: 0, end: 6 },
       { id: 'ending-caption', sceneId: 'ending', text: '在 Codex 中使用 Skill ', start: 6, end: 11 },
@@ -132,7 +132,7 @@ test('a product signoff before a silent poster keeps its evidence above the subt
     spec.scenes.push({ ...structuredClone(spec.scenes.at(-1)!), id: 'poster-ending', authorPosterAssetId: 'poster', assetRefs: ['poster'], voiceover: '', caption: '', actualStartSec: 12, actualEndSec: 20, plannedDurationSec: 8, heroFrameSec: 16,
       action: { intent: 'Read the complete poster', primitive: 'reading-hold', subject: { assetId: 'poster' }, beforeState: 'Readable', afterState: 'Readable', startFrame: 0, endFrame: 1, holdFrames: 239 } });
     spec.output.targetDurationSec = 20;
-    await writeFile(path.join(directory, 'index.html'), composeVideo(spec, { gsapPath: 'assets/gsap.min.js', fonts: [], narration: { path: 'assets/silence.wav', durationSec: 12, cues: [ { id: 'ending-caption', sceneId: 'ending', text: '在 Codex 中使用 Skill', start: 6, end: 11 } ] } }));
+    await writeFile(path.join(directory, 'index.html'), composeVideo(spec, { gsapPath: 'assets/gsap.min.js', fonts: FIXTURE_FONTS, narration: { path: 'assets/silence.wav', durationSec: 12, cues: [ { id: 'ending-caption', sceneId: 'ending', text: '在 Codex 中使用 Skill', start: 6, end: 11 } ] } }));
     const checks = await browserQa(directory, spec);
     for (const id of ['browser.ending.caption-ui-overlap', 'browser.narration.cue-0.ui-overlap']) assert.equal(checks.find(c => c.id === id)?.status, 'PASS', `${width}: ${id}`);
   }
@@ -237,7 +237,7 @@ test('whole author posters fill both canvases with an uncropped image and remain
       await writeFile(path.join(directory, 'assets/silence.wav'), silentWav());
       spec.assets[1] = { ...spec.assets[1]!, path: 'assets/poster.svg', width: 1500, height: 1000 };
       spec.scenes[1]!.authorPosterAssetId = 'subject';
-      const output = composeVideo(spec, { gsapPath: 'assets/gsap.min.js', fonts: [], narration: { path: 'assets/silence.wav', cues: [{ sceneId: 'proof', text: 'Caption ends before the poster.', start: 0, end: 6 }] } });
+      const output = composeVideo(spec, { gsapPath: 'assets/gsap.min.js', fonts: FIXTURE_FONTS, narration: { path: 'assets/silence.wav', cues: [{ sceneId: 'proof', text: 'Caption ends before the poster.', start: 0, end: 6 }] } });
       await writeFile(path.join(directory, 'index.html'), output);
       const page = await browser.newPage();
       await page.setViewport({ width, height: spec.output.height, deviceScaleFactor: 1 });

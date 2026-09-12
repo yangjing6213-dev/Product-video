@@ -10,7 +10,7 @@ import { environment } from '../../src/pipeline/tools.ts';
 import { composeVideo } from '../../src/quality/composition.ts';
 import { workflowText, type SceneWorkflow, type WorkflowLayout } from '../../src/quality/workflow.ts';
 import { validVideoSpec } from '../fixtures/input.ts';
-import { requireFixtureFont, TEST_CJK_FONT, writeBrowserAssets } from '../fixtures/browser-assets.ts';
+import { FIXTURE_FONTS, requireFixtureFont, TEST_CJK_FONT, writeBrowserAssets } from '../fixtures/browser-assets.ts';
 
 before(requireFixtureFont);
 
@@ -92,7 +92,7 @@ async function prepare(layout: WorkflowLayout, width: 1920 | 1080) {
   const spec = specFor(layout, width);
   const html = composeVideo(spec, {
     gsapPath: 'assets/gsap.min.js',
-    fonts: [],
+    fonts: FIXTURE_FONTS,
   });
   await writeFile(path.join(directory, 'index.html'), html);
   await writeFile(path.join(directory, 'video-spec.json'), `${JSON.stringify(spec, null, 2)}\n`);

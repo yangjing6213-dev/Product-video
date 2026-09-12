@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Windows source and media checks
+    runs-on: windows-2025
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      PYTHONUTF8: '1'
+      HYPERFRAMES_NO_TELEMETRY: '1'
+      HYPERFRAMES_NO_UPDATE_CHECK: '1'
+      HYPERFRAMES_SKIP_SKILLS: '1'
+      HF_NO_BROWSER: '1'
+      EPVS_TEST_CJK_FONT: Source Han Sans CN
+      EPVS_TEST_CJK_FONT_PATH: ${{ github.workspace }}/.tools/ci-font/SourceHanSansCN-Regular.otf
+      EPVS_BROWSER_TEST_REPORTS: ${{ runner.temp }}/epvs-browser-checks
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24.19.0'
+          package-manager-cache: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.12.14'
+      - name: Install locked source dependencies
+        run: npm ci --no-fund
+      - name: Install Python test dependencies
+        run: python -m pip install --disable-pip-version-check --no-cache-dir numpy==2.5.3 Pillow==12.3.0
+      - name: Prepare verified local media tools
+        run: node scripts/setup-local.mjs
+      - name: Prepare licensed project-local Chinese test font
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $directory = Join-Path $env:GITHUB_WORKSPACE '.tools/ci-font'
+          New-Item -ItemType Directory -Path $directory | Out-Null
+          $base = 'https://raw.githubusercontent.com/adobe-fonts/source-han-sans/6c709ca72d3d7c46ab42ebecc1a26e7d69595a37'
+          $files = @(
+            @{ Source = 'SubsetOTF/CN/SourceHanSansCN-Regular.otf'; Name = 'SourceHanSansCN-Regular.otf'; Hash = 'e2bc8a2e7f37474b774fff8db758681ece40bb6947a90d571bce9dd60671a8e4' },
+            @{ Source = 'LICENSE.txt'; Name = 'LICENSE.txt'; Hash = 'fcac737e761ec63dbfbdce11030a1780161920d80315edba9c8beff1c2bac5a2' }
+          )
+          foreach ($file in $files) {
+            $target = Join-Path $directory $file.Name
+            Invoke-WebRequest -Uri "$base/$($file.Source)" -OutFile $target
+            if ((Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash.ToLowerInvariant() -ne $file.Hash) { throw 'CI font/license hash mismatch' }
+          }
+      - name: Type check
+        run: npm run typecheck
+      - name: Source and contract lint
+        run: npm run lint
+      - name: TypeScript and real browser tests
+        run: node --test --test-reporter=tap tests/**/*.test.ts
+      - name: Python migration and speech contract tests
+        run: python -X utf8 -m unittest discover -s scripts -p 'test_*.py'
+      - name: Dependency risk regression
+        run: npm run check:dependency-risk
+      - name: Dependency vulnerability audit
+        run: npm audit --audit-level=low
+      - name: Verify actual public package boundary
+        run: |
+          npm pack --ignore-scripts --json --pack-destination "$env:RUNNER_TEMP" > "$env:RUNNER_TEMP/epvs-pack.json"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          @'
+          import json, os, pathlib, tarfile
+          temp = pathlib.Path(os.environ['RUNNER_TEMP'])
+          metadata = json.loads((temp / 'epvs-pack.json').read_text(encoding='utf-8-sig'))
+          pack = metadata[0] if isinstance(metadata, list) else next(iter(metadata.values()))
+          allowed_roots = {'src', 'scripts', 'schemas', 'recipes', 'prompts', 'skills', 'docs'}
+          allowed_root_files = {'package.json', 'LICENSE', 'README.md', 'README.en.md', 'THIRD_PARTY_NOTICES.md'}
+          with tarfile.open(temp / pack['filename']) as archive:
+              members = archive.getmembers()
+              assert members, 'Package is empty'
+              for member in members:
+                  p = pathlib.PurePosixPath(member.name)
+                  assert p.parts[0] == 'package' and '..' not in p.parts and member.isfile(), f'Unsafe member: {p}'
+                  rel = pathlib.PurePosixPath(*p.parts[1:])
+                  assert rel.parts[0] in allowed_roots or str(rel) in allowed_root_files, f'Private/unexpected path: {rel}'
+                  if rel.parts[0] == 'docs':
+                      assert len(rel.parts) > 2 and rel.parts[1] in {'architecture', 'guides', 'security'}, f'Private documentation: {rel}'
+                  assert rel.suffix in {'.ts', '.js', '.mjs', '.mts', '.py', '.txt', '.json', '.md'} or str(rel) == 'LICENSE', f'Media/binary in package: {rel}'
+                  assert member.size < 1_000_000, f'Large public member: {rel}'
+                  text = archive.extractfile(member).read().decode('utf-8')
+                  assert '\0' not in text, f'Binary content: {rel}'
+          print(f'PASS: {len(members)} actual package members; source and public documentation only.')
+          '@ | python -X utf8 -

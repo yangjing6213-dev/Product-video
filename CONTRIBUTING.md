@@ -31,7 +31,9 @@ npm run typecheck
 npm test
 ```
 
-Browser tests require an installed Chrome executable (`HYPERFRAMES_BROWSER_PATH`) and a system Chinese font. The layout/workflow fixtures default to Microsoft YaHei on Windows; set `EPVS_TEST_CJK_FONT` to another installed, licensed CJK font family when needed. Missing fonts fail with setup instructions rather than accepting fallback or skipping assertions; private brand images and font binaries are not required by these fixtures.
+Browser tests require an installed Chrome executable (`HYPERFRAMES_BROWSER_PATH`) and a licensed Chinese font. The layout/workflow fixtures default to Microsoft YaHei on Windows; set `EPVS_TEST_CJK_FONT` to another installed CJK font family when needed. To load a verified font file without a system install, also set `EPVS_TEST_CJK_FONT_PATH` to its absolute path. Missing fonts fail with setup instructions rather than accepting fallback or skipping assertions; private brand images are not required by these fixtures.
+
+The [CI workflow](.github/workflows/ci.yml) runs on main pushes, pull requests and manual requests using a standard Windows runner. It checks source, real browser layout, Python migration/speech contracts, dependencies and the actual public package. CI downloads a pinned OFL Chinese font into the temporary workspace; no system font installation is required. Two optional Kokoro integration tests explicitly skip when that local backend is absent. Private voice models, brand assets and generated videos are never uploaded, cached or published by this workflow. See the [CI guide](docs/guides/ci.md) for the exact scope and local reproduction.
 
 The project does not currently configure coverage tooling or a coverage threshold. It also has no separate compilation build step because Node.js executes the TypeScript ESM sources directly. Do not report coverage or build as passing; record them as not configured or not applicable.
 

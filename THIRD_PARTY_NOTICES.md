@@ -90,3 +90,6 @@ binaries, model weights, voice files, package installation directories, or
 locally generated product media. If a future release adds any such material,
 its license, required notices, source-code obligations, and content rights must
 be reviewed before distribution.
+# CI-only media tooling
+
+The CI workflow uses the standard GitHub-hosted Windows image's installed Google Chrome, subject to its existing terms. It installs the hash-pinned Windows wheel of [imageio-ffmpeg 0.6.0](https://pypi.org/project/imageio-ffmpeg/0.6.0/); the Python wrapper is BSD-2-Clause. That wheel's FFmpeg 7.1 binary reports GPL version 3 or later and retains its upstream terms. These tools run only on the ephemeral CI runner; this repository and its npm package do not redistribute their binaries. The production local toolchain is unchanged.

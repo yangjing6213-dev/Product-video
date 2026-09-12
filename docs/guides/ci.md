@@ -4,7 +4,7 @@ GitHub Actions 在主分支 Push、Pull Request 和手动运行时检查公开�
 
 检查包括：锁文件安装、类型检查、源码与契约 Lint、TypeScript 测试、真实 Chrome 排版测试、Python 迁移和语音契约测试、依赖风险回归、npm 漏洞审计，以及实际 npm 压缩包的公开内容边界。项目直接运行 TypeScript，没有单独构建命令，也没有配置覆盖率门槛。
 
-浏览器与媒体工具通过现有 `scripts/setup-local.mjs` 下载并校验固定版本和 SHA-256。中文浏览器夹具从 Adobe 官方仓库的固定提交下载未修改的 Source Han Sans CN 2.005R Regular 和完整 SIL OFL 1.1 许可；两者校验哈希后通过测试页面的 `@font-face` 加载，不安装系统字体。浏览器仍通过 CDP 验证实际使用的中文字体，不接受缺字回退。
+CI 使用标准 Windows runner 已安装的 Chrome，运行器镜像版本和 Chrome 文件哈希记录在日志中。FFmpeg 7.1 来自固定 SHA-256 的 `imageio-ffmpeg 0.6.0` Windows wheel，并再次核验可执行文件哈希；FFprobe 使用 npm 锁文件版本并校验二进制哈希。CI 只在临时工作区写工具路径，不修改本机 `scripts/setup-local.mjs` 的固定制作工具链。中文浏览器夹具从 Adobe 官方仓库的固定提交下载未修改的 Source Han Sans CN 2.005R Regular 和完整 SIL OFL 1.1 许可；两者校验哈希后通过测试页面的 `@font-face` 加载，不安装系统字体。浏览器仍通过 CDP 验证实际使用的中文字体，不接受缺字回退。
 
 在本地复现字体模式，可设置 `EPVS_TEST_CJK_FONT=Source Han Sans CN` 和 `EPVS_TEST_CJK_FONT_PATH` 为经校验的本地字体绝对路径，再运行 `npm test`。不设置文件路径时，仍使用原有系统字体测试方式。
 

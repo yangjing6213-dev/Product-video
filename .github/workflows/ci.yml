@@ -47,9 +47,29 @@ jobs:
       - name: Install locked source dependencies
         run: npm ci --no-fund
       - name: Install Python test dependencies
-        run: python -m pip install --disable-pip-version-check --no-cache-dir numpy==2.5.3 Pillow==12.3.0
-      - name: Prepare verified local media tools
-        run: node scripts/setup-local.mjs
+        run: python -m pip install --disable-pip-version-check --no-cache-dir numpy==2.5.3 Pillow==12.3.0 'imageio-ffmpeg @ https://files.pythonhosted.org/packages/2c/c6/fa760e12a2483469e2bf5058c5faff664acf66cadb4df2ad6205b016a73d/imageio_ffmpeg-0.6.0-py3-none-win_amd64.whl#sha256=02fa47c83703c37df6bfe4896aab339013f62bf02c5ebf2dce6da56af04ffc0a'
+      - name: Prepare CI media tools
+        run: |
+          @'
+          import hashlib, json, os, pathlib, subprocess
+          import imageio_ffmpeg
+          root = pathlib.Path.cwd()
+          chrome = pathlib.Path(os.environ['PROGRAMFILES']) / 'Google/Chrome/Application/chrome.exe'
+          ffmpeg = pathlib.Path(imageio_ffmpeg.get_ffmpeg_exe())
+          ffprobe = root / 'node_modules/ffprobe-static/bin/win32/x64/ffprobe.exe'
+          def sha(p):
+              with p.open('rb') as f: return hashlib.file_digest(f, 'sha256').hexdigest()
+          assert chrome.is_file(), 'Standard Windows runner Chrome is missing'
+          assert sha(ffmpeg) == '2ce797a0f88d7f067180338fb227f7b1928ea727bd9a4d7a1d022f7c52af71a3', 'FFmpeg binary mismatch'
+          assert sha(ffprobe) == '4303ec85855340689b1f8aa5d9c1dc06ef3e3090682de3034edc3fca2b0798d5', 'FFprobe binary mismatch'
+          values = {'HYPERFRAMES_BROWSER_PATH': str(chrome), 'HYPERFRAMES_FFMPEG_PATH': str(ffmpeg), 'HYPERFRAMES_FFPROBE_PATH': str(ffprobe), 'HYPERFRAMES_EXTRACT_CACHE_DIR': str(root / '.cache/frames')}
+          (root / '.tools').mkdir(exist_ok=True)
+          (root / '.cache/frames').mkdir(parents=True, exist_ok=True)
+          with (root / '.tools/environment.json').open('x', encoding='utf-8') as f: json.dump(values, f, indent=2)
+          print(json.dumps({'paths': values, 'chromeSha256': sha(chrome), 'ffmpegSha256': sha(ffmpeg)}, indent=2))
+          subprocess.run([str(ffmpeg), '-version'], check=True)
+          subprocess.run([str(ffprobe), '-version'], check=True)
+          '@ | python -X utf8 -
       - name: Prepare licensed project-local Chinese test font
         run: |
           $ErrorActionPreference = 'Stop'

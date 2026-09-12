@@ -72,8 +72,8 @@ def known_dependency_link(path, root, relative):
         checked_path(expected)
         if not fs_path(expected).is_dir():
             return False
-        resolved = logical_path(fs_path(path).resolve(strict=True))
-        return os.path.normcase(str(resolved)) == os.path.normcase(str(expected))
+        # Windows short and long spellings can name the same checked directory.
+        return fs_path(path).samefile(fs_path(expected))
     except (BackupError, OSError):
         return False
 

@@ -91,6 +91,7 @@ test('delayed music fades in from its actual start instead of arriving at full g
   await writeFile(path.join(f.project, 'input/voice.wav'), shortVoice);
   const mix = await createAudioMix(f.root, f.project, { ...f.request, voiceSha256: digest(shortVoice), voiceOffsetSec: 0.7, musicOffsetSec: 0.2, fadeInSec: 0.2 });
   const pcm = samples(await readFile(path.join(f.root, mix.mixPath)));
+  assert.ok(amplitude(pcm, 880, 0, 9120) < 0.001, 'Music must remain silent before its 0.2-second start');
   assert.ok(amplitude(pcm, 880, 9840, 11760) < 0.004);
   assert.ok(amplitude(pcm, 880, 19200, 24000) > 0.009);
 });

@@ -54,9 +54,11 @@ export async function createAudioMix(root: string, project: string, input: Audio
     channelFilters.push(streams[0]!.channels === 1 ? 'pan=stereo|c0=c0|c1=c0' : 'anull');
   }
   const number = (value: number) => String(value);
+  // Rebuild timestamps immediately after delay: some FFmpeg versions emit NOPTS
+  // for leading silence, which duration trimming can otherwise discard.
   const filters = [
-    `[0:a]${channelFilters[0]},aresample=48000,aformat=sample_fmts=fltp,volume=${number(request.voiceGainDb)}dB,adelay=${Math.round(request.voiceOffsetSec * 48000)}S:all=1,apad,atrim=duration=${number(request.durationSec)}[voice]`,
-    `[1:a]${channelFilters[1]},aresample=48000,aformat=sample_fmts=fltp,volume=${number(request.musicGainDb)}dB,adelay=${Math.round(request.musicOffsetSec * 48000)}S:all=1,apad,atrim=duration=${number(request.durationSec)},afade=t=in:st=${number(request.musicOffsetSec)}:d=${number(request.fadeInSec)},afade=t=out:st=${number(request.durationSec - request.fadeOutSec)}:d=${number(request.fadeOutSec)}[music]`,
+    `[0:a]${channelFilters[0]},aresample=48000,aformat=sample_fmts=fltp,volume=${number(request.voiceGainDb)}dB,adelay=${Math.round(request.voiceOffsetSec * 48000)}S:all=1,asetpts=N/SR/TB,apad,atrim=duration=${number(request.durationSec)}[voice]`,
+    `[1:a]${channelFilters[1]},aresample=48000,aformat=sample_fmts=fltp,volume=${number(request.musicGainDb)}dB,adelay=${Math.round(request.musicOffsetSec * 48000)}S:all=1,asetpts=N/SR/TB,apad,atrim=duration=${number(request.durationSec)},afade=t=in:st=${number(request.musicOffsetSec)}:d=${number(request.fadeInSec)},afade=t=out:st=${number(request.durationSec - request.fadeOutSec)}:d=${number(request.fadeOutSec)}[music]`,
     '[voice][music]amix=inputs=2:duration=longest:normalize=0,aresample=192000,alimiter=limit=0.8413951416:level=0:latency=1,aresample=48000[mix]',
   ].join(';');
   const result = await command(env.HYPERFRAMES_FFMPEG_PATH ?? 'ffmpeg', ['-v', 'error', '-nostdin', '-n',

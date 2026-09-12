@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { syncBuiltinESMExports } from 'node:module';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
@@ -11,7 +11,7 @@ import { freezeBrandAssets, loadBrandCatalog, resolveProjectAsset, verifyFrozenB
 
 const hash = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 async function fixture(reviewStatus = 'APPROVED') {
-  const root = await mkdtemp(path.join(tmpdir(), 'EPVS 中文 库 '));
+  const root = await realpath(await mkdtemp(path.join(tmpdir(), 'EPVS 中文 库 ')));
   const originalPath = 'assets/brand/enhe/ip/originals/角色 图片.svg';
   await mkdir(path.dirname(path.join(root, originalPath)), { recursive: true });
   const bytes = '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><circle cx="40" cy="40" r="30" fill="#004cff"/></svg>';
@@ -120,7 +120,7 @@ test('approval and catalog digest bind the same bytes when a review changes duri
     await assert.rejects(freezeBrandAssets(f.root, path.join(f.root, 'projects', 'new-film'), selection), /APPROVED/);
   } finally {
     t.mock.restoreAll(); syncBuiltinESMExports();
-    assert.equal(path.dirname(f.root), tmpdir());
+    assert.equal(path.dirname(f.root), await realpath(tmpdir()));
     await rm(f.root, { recursive: true, force: true });
   }
 });
@@ -152,7 +152,7 @@ test('an interrupted pending snapshot never publishes partial bytes and can be r
     assert.equal(await readFile(destination, 'utf8'), '{"complete":true}\n');
   } finally {
     t.mock.restoreAll(); syncBuiltinESMExports();
-    assert.equal(path.dirname(f.root), tmpdir());
+    assert.equal(path.dirname(f.root), await realpath(tmpdir()));
     await rm(f.root, { recursive: true, force: true });
   }
 });
@@ -165,7 +165,7 @@ test('exclusive snapshot publication preserves an already existing destination',
     await assert.rejects(writeExclusiveSnapshot(destination, 'replacement'), { code: 'EEXIST' });
     assert.equal(await readFile(destination, 'utf8'), 'existing user snapshot');
   } finally {
-    assert.equal(path.dirname(f.root), tmpdir());
+    assert.equal(path.dirname(f.root), await realpath(tmpdir()));
     await rm(f.root, { recursive: true, force: true });
   }
 });

@@ -253,7 +253,13 @@ export async function browserQa(project: string, spec: VideoSpec): Promise<Check
       response.setHeader('Content-Length', bytes.length);
       if (request.method === 'HEAD') response.end();
       else response.end(bytes);
-    } catch { response.writeHead(404).end(); }
+    } catch (error) {
+      // Full Chrome requests this optional browser icon even when the video has no favicon.
+      const defaultIcon = request.url === '/favicon.ico'
+        && (error as NodeJS.ErrnoException).code === 'ENOENT'
+        && !spec.assets.some(asset => path.resolve(project, asset.path) === path.join(path.resolve(project), 'favicon.ico'));
+      response.writeHead(defaultIcon ? 204 : 404).end();
+    }
   });
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
   const address = server.address();

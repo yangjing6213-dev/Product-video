@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdtemp, writeFile, rm, access, copyFile, mkdir } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, rm, access, copyFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { browserQa } from '../../src/qa/browser.ts';
@@ -30,6 +30,27 @@ test('real browser rejects layout and brand counterexamples', async t => {
     await t.test('valid body, 16px labels, declared fonts and palette pass', async () => {
       const checks = await run();
       assert.deepEqual(checks.filter(c => c.status === 'FAIL'), []);
+    });
+    await t.test('an absent browser-default favicon has an empty response without hiding an existing icon', async () => {
+      const checks = await run('', '<script>fetch("/favicon.ico").then(async response => { const body = await response.arrayBuffer(); if (response.status !== 204 || body.byteLength !== 0) throw new Error("Expected an empty default icon response"); });</script>');
+      assert.equal(status(checks, 'resources'), 'PASS');
+      const icon = '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"><rect width="1" height="1"/></svg>';
+      await writeFile(path.join(project, 'favicon.ico'), icon);
+      const existing = await run('', `<script>fetch("/favicon.ico").then(async response => { if (response.status !== 200 || await response.text() !== ${JSON.stringify(icon)}) throw new Error("Existing icon content was replaced"); });</script>`);
+      assert.equal(status(existing, 'resources'), 'PASS');
+      await rm(path.join(project, 'favicon.ico'));
+    });
+    await t.test('missing authored resources and page exceptions remain blocking', async () => {
+      const checks = await run('', '<img src="missing-preview.png"><script>throw new Error("fixture runtime failure");</script>');
+      assert.equal(status(checks, 'resources'), 'FAIL');
+      const report = JSON.parse(await readFile(path.join(project, 'reports/browser-layout.json'), 'utf8'));
+      assert.ok(report.failures.some((failure: string) => failure.includes('/missing-preview.png')));
+      assert.ok(report.failures.some((failure: string) => failure.includes('fixture runtime failure')));
+      spec.assets.push({ ...spec.assets[0]!, id: 'authored-icon', path: 'favicon.ico' });
+      try {
+        const authoredIcon = await run('', '<script>fetch("/favicon.ico");</script>');
+        assert.equal(status(authoredIcon, 'resources'), 'FAIL');
+      } finally { spec.assets.pop(); }
     });
     await t.test('disabled captions do not require a rendered caption in a narration-free project', async () => {
       spec.captions.enabled = false;

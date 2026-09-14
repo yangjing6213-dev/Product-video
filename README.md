@@ -51,6 +51,14 @@
 - **改一部分，可以接着做。** 保存素材和任务状态，符合复用条件的步骤无需重复执行。
 - **知道问题出在哪里。** 用实际检查和报告判断完成情况，不把“文件生成了”当作“成片通过了”。
 
+![从零散资料到讲清产品用途和用户目标](https://raw.githubusercontent.com/yangjing6213-dev/Product-video/main/docs/showcase/value-product-story.png)
+
+![先审稿再制作，减少返工](https://raw.githubusercontent.com/yangjing6213-dev/Product-video/main/docs/showcase/value-review-before-production.png)
+
+![先核验，未变复用，变动重做](https://raw.githubusercontent.com/yangjing6213-dev/Product-video/main/docs/showcase/value-reuse-verified-work.png)
+
+![文件生成后继续验片，检查后交付](https://raw.githubusercontent.com/yangjing6213-dev/Product-video/main/docs/showcase/value-check-before-delivery.png)
+
 ## 五、示例效果
 
 ### 62 秒：从产品介绍到推广视频

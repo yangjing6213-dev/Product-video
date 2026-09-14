@@ -87,8 +87,8 @@ rendered videos, and it grants no rights in third-party names or marks.
 ## Explicitly approved GitHub showcase
 
 The repository owner has separately approved the final author image, video
-cover and 62-second demonstration in `docs/showcase/` for public display in
-this repository and its README. These three selected files are not reusable
+cover, 62-second demonstration and four user-provided value illustrations in `docs/showcase/` for public display in
+this repository and its README. These seven selected files are not reusable
 Apache-2.0 media assets. See the [showcase notice](https://github.com/yangjing6213-dev/Product-video/blob/main/docs/showcase/NOTICE.md)
 for the exact scope, music credit, modifications and other asset terms.
 The npm pack file allowlist still excludes these media files; the

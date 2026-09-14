@@ -1,6 +1,6 @@
 ---
 name: enhe-product-video
-description: Use when a user explicitly asks to generate a product introduction video, product promotion video, or turn a website or product page into a video; exclude general editing, film generation, and human-presenter replacement.
+description: Use when a user explicitly asks to generate a product introduction video, product promotion video, or turn a website or product page into a video; exclude unrelated general editing, film generation, and voice impersonation.
 ---
 
 # ENHE Product Video
@@ -17,6 +17,10 @@ Create truthful product videos with Codex-authored creative artifacts and HyperF
 6. When the user requests 中文旁白 (local Chinese narration) or Chinese subtitles, read the **current new-task entry** in [the Chinese TTS guide](../../docs/guides/CHINESE-TTS.md) before authoring audio. Its historical benchmark replay section does not replace the normal `video voice` route.
 7. For every new job, read [the IP library guide](../../docs/guides/IP-LIBRARY.md), select reviewed assets from the project catalog, and freeze the exact versions before preview or rendering.
 8. For all current new jobs, follow [the active generator guide](../../docs/guides/GENERATOR-QUALITY.md) and `recipes/policies/generator-quality.v3.json`. This current policy and the user's explicit changes override historical R2/MVP examples below.
+
+## Cover and author framing for every new task
+
+Read [AUTHOR-FRAMING.md](../../docs/guides/AUTHOR-FRAMING.md) before creating the cover or author ending. Lock the approved `enhe-cinematic-glass-v1` style; do not redesign it. Ask once for the person's image, use the authorized existing default if none is supplied, and use a supplied new identity consistently in both cover and ending. Changing the person never changes the approved voice or author contacts automatically. Select a genuinely different real background for each new video and record private scene history; resume reuses the exact frozen person, scene and images. Review the two candidate images together before final render. Missing private defaults are an explicit missing-asset state, not permission to invent a face. This new-task rule takes precedence over historical fixed-poster/no-portrait examples; old frozen jobs keep their original contract.
 
 ## Creative ownership
 

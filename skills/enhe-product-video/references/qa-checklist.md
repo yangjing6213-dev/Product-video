@@ -4,6 +4,10 @@ Current jobs follow [GENERATOR-QUALITY.md](../../../docs/guides/GENERATOR-QUALIT
 
 Use current command output and generated files as evidence. A check that did not run is `NOT_RUN`; a static reference test is not end-to-end video verification.
 
+## Cover and author framing gate
+
+For new jobs, [AUTHOR-FRAMING.md](../../../docs/guides/AUTHOR-FRAMING.md) takes precedence over historical no-portrait/fixed-poster examples. Verify the recorded default/supplied person choice, actual authorized source, matching identity in both images, and the locked `enhe-cinematic-glass-v1` style. Check semantic scene distinctness against private history (a crop, color change or new filename is not a new scene), and unchanged frozen bytes on resume. Verify cover poster visibility, complete reviewed bilingual copy and author contacts; preserve the voice. Missing defaults or unreadable supplied images cannot pass. Report person selection, style, scene distinctness, cover/ending identity and user acceptance separately; document tests do not prove actual image quality.
+
 ## Input and provenance gate
 
 - Product input and `video-spec.json` validate against their schemas.

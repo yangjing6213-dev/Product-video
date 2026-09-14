@@ -18,6 +18,10 @@ Current new jobs first apply [GENERATOR-QUALITY.md](../../../docs/guides/GENERAT
 | Narration mode | `audio.narrationMode` | One of verified HyperFrames TTS, authorized external audio, or `none`. |
 | Frozen brand selection for a new job | `brandLibrary` | Required by new-job `init`; choose reviewed catalog versions, or provide an explicit reason for no selection. |
 
+## Cover and author identity input
+
+For every new job, follow [AUTHOR-FRAMING.md](../../../docs/guides/AUTHOR-FRAMING.md): ask once whether the user supplies a person image. An already supplied image answers this question. Otherwise use the authorized local default and record that choice. Use the same selected identity in cover and author ending, keep the approved style, and do not change voice/name/contacts by implication. Missing or invalid supplied images cannot silently fall back. A public checkout without private defaults reports `MISSING_DEFAULT_ASSET`. Record style/person/scene references and hashes in the private task `framing-plan.json`; this is a Skill artifact, not an extra unsupported product-input schema field.
+
 ## Project brand selection
 
 Read `assets/brand/enhe/ip/catalog.json` and select by meaning, not randomly or by filename order. The catalog uses stable `assetId`, measured metadata, project-relative paths, content hashes, review status, original/derived relationships, and rights notes. Original and derived content have separate hashes. A PNG or RGBA file can still be completely opaque; use measured `hasTransparency`, and preserve `null` when metadata cannot be measured.

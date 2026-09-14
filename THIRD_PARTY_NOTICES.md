@@ -83,11 +83,23 @@ contains project-authored example narration text only. It does not include or
 license the related product assets, synthesized voices, audio, screenshots, or
 rendered videos, and it grants no rights in third-party names or marks.
 
+
+## Explicitly approved GitHub showcase
+
+The repository owner has separately approved the final author image, video
+cover and 62-second demonstration in `docs/showcase/` for public display in
+this repository and its README. These three selected files are not reusable
+Apache-2.0 media assets. See the [showcase notice](https://github.com/yangjing6213-dev/Product-video/blob/main/docs/showcase/NOTICE.md)
+for the exact scope, music credit, modifications and other asset terms.
+The npm pack file allowlist still excludes these media files; the
+private brand library, voice references, source images and other videos remain
+excluded from public distribution.
+
 ## Distribution boundary
 
 This source release does not vendor or redistribute third-party executable
 binaries, model weights, voice files, package installation directories, or
-locally generated product media. If a future release adds any such material,
+private locally generated product media. If a future release adds any such material,
 its license, required notices, source-code obligations, and content rights must
 be reviewed before distribution.
 # CI-only media tooling

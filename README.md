@@ -57,9 +57,11 @@
 
 这支视频介绍 ENHE Product Video Studio，包含开头封面、产品讲解、角色与流程演示、官网入口和作者片尾。
 
-[![ENHE Product Video Studio 视频封面：产品做出来了，介绍视频怎么做？](https://raw.githubusercontent.com/yangjing6213-dev/Product-video/main/docs/showcase/enhe-studio-cover.png)](docs/showcase/enhe-studio-demo-62s.mp4)
+[![ENHE Product Video Studio 视频封面：产品做出来了，介绍视频怎么做？](https://raw.githubusercontent.com/yangjing6213-dev/Product-video/main/docs/showcase/enhe-studio-cover.png)](https://github.com/yangjing6213-dev/Product-video/raw/refs/heads/main/docs/showcase/enhe-studio-demo-62s.mp4)
 
-**[打开 62 秒完整视频](docs/showcase/enhe-studio-demo-62s.mp4)** · [下载 MP4](https://github.com/yangjing6213-dev/Product-video/raw/refs/heads/main/docs/showcase/enhe-studio-demo-62s.mp4)
+**[下载观看 62 秒完整视频（MP4）](https://github.com/yangjing6213-dev/Product-video/raw/refs/heads/main/docs/showcase/enhe-studio-demo-62s.mp4)**
+
+点击封面或上方链接下载完整视频。GitHub 首页展示封面，视频请下载后播放。
 
 背景音乐：[Electric Dreams](https://www.scottbuckley.com.au/library/electric-dreams/) — [Scott Buckley](https://www.scottbuckley.com.au/)，采用 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 许可；视频中进行了截取、音量调整和淡入淡出。
 

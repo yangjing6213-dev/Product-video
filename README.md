@@ -6,6 +6,8 @@
 
 [English](README.en.md) · [查看示例效果](#五示例效果) · [安装方法](#六安装方法) · [恩禾官网](https://www.enhe-tech.com.cn/)
 
+![Product Video Studio 中文封面](docs/showcase/product-video-cover-zh-v01.png)
+
 ## 一、这个仓库是什么？
 
 这是一个配合 **Codex** 使用的本地产品视频制作工具，当前版本为 **0.1.0**。

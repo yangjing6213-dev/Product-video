@@ -6,6 +6,8 @@ Turn scattered product notes, screenshots and assets into a video that explains 
 
 [中文](README.md) · [See the example](#5-example) · [Installation](#6-installation) · [ENHE website](https://www.enhe-tech.com.cn/)
 
+![Product Video Studio English cover](docs/showcase/product-video-cover-en-v01.png)
+
 ## 1. What is this repository?
 
 This is a local product-video tool designed to work with **Codex**. The current version is **0.1.0**.

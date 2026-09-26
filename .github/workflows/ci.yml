@@ -118,7 +118,7 @@ jobs:
                   assert rel.parts[0] in allowed_roots or str(rel) in allowed_root_files, f'Private/unexpected path: {rel}'
                   if rel.parts[0] == 'docs':
                       assert len(rel.parts) > 2 and rel.parts[1] in {'architecture', 'guides', 'security'}, f'Private documentation: {rel}'
-                  assert rel.suffix in {'.ts', '.js', '.mjs', '.mts', '.py', '.txt', '.json', '.md'} or str(rel) == 'LICENSE', f'Media/binary in package: {rel}'
+                  assert rel.suffix in {'.ts', '.tsx', '.js', '.mjs', '.mts', '.py', '.txt', '.json', '.md'} or str(rel) == 'LICENSE', f'Media/binary in package: {rel}'
                   assert member.size < 1_000_000, f'Large public member: {rel}'
                   text = archive.extractfile(member).read().decode('utf-8')
                   assert '\0' not in text, f'Binary content: {rel}'

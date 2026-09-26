@@ -18,8 +18,10 @@ This file records notable changes to Product Video Studio. The current feature u
 ### 验证 / Verification
 
 - 自动化测试：398 通过，0 失败；TypeScript 类型检查和源码检查通过。
+- CI 会检查实际生成的 npm 包边界，并允许包内使用的 `.tsx` 源码；图片、音频、视频等媒体仍不属于软件包。
 - Remotion 本地渲染冒烟验证：H.264、1920×1080、30 fps、45 秒。该验证确认渲染器可工作，不代表新产品视频已经完成人工视听验收。
 - Automated tests: 398 passed, 0 failed; TypeScript typecheck and source checks passed.
+- CI checks the actual npm package boundary and allows the `.tsx` source used by the package; image, audio, video, and other media remain excluded.
 - Local Remotion render smoke test: H.264, 1920×1080, 30 fps, 45 seconds. This verifies the renderer, not human approval of a new product video.
 
 ### 使用边界 / Notes

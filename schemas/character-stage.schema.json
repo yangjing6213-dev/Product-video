@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://enhe.local/schemas/character-stage.schema.json",
+  "$defs": {
+    "box": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "number", "minimum": 0 } },
+    "poses": {
+      "type": "object", "additionalProperties": false, "required": ["idle", "explain"],
+      "properties": { "idle": { "$ref": "#/$defs/box" }, "explain": { "$ref": "#/$defs/box" } }
+    },
+    "bilingual": {
+      "type": "object", "additionalProperties": false, "required": ["onScreenText", "subtitle"],
+      "properties": {
+        "onScreenText": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1, "maxLength": 240 } },
+        "subtitle": { "type": "string", "maxLength": 400 }
+      }
+    },
+    "stage": {
+      "type": "object", "additionalProperties": false, "required": ["layout", "actors", "panels", "beats"],
+      "properties": {
+        "performance": { "$ref": "https://enhe.local/schemas/performance.schema.json#/$defs/performance" },
+        "layout": { "enum": ["gather", "sequence", "timeline", "result"] },
+        "actors": {
+          "type": "array", "minItems": 1, "maxItems": 2,
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["assetId", "side"],
+            "properties": { "assetId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$" }, "side": { "enum": ["left", "right"] } }
+          }
+        },
+        "panels": {
+          "type": "array", "minItems": 1, "maxItems": 4,
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["id", "textIndices"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$" },
+              "textIndices": { "type": "array", "minItems": 1, "maxItems": 4, "uniqueItems": true, "items": { "type": "integer", "minimum": 1 } },
+              "assetId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$" }
+            }
+          }
+        },
+        "beats": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["frame", "actor", "pose", "panelId"],
+            "properties": {
+              "frame": { "type": "integer", "minimum": 0 }, "actor": { "type": "integer", "minimum": 0, "maximum": 1 },
+              "pose": { "enum": ["idle", "explain"] }, "panelId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

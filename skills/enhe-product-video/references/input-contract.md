@@ -15,6 +15,7 @@ Current new jobs first apply [GENERATOR-QUALITY.md](../../../docs/guides/GENERAT
 | Brand logo, colors, and fonts | `brand`, `assets[]` | Extract from a real site or supplied material. Record font fallback explicitly. |
 | CTA | `product.cta` | Use one exact label and verified destination. |
 | Output locale | `output.locale` | Controls script, on-screen copy, and caption language. |
+| Renderer choice | `renderMode` | Optional: `hyperframes` by default for compatibility, or explicit local `remotion`; freeze it before generation. |
 | Narration mode | `audio.narrationMode` | One of verified HyperFrames TTS, authorized external audio, or `none`. |
 | Frozen brand selection for a new job | `brandLibrary` | Required by new-job `init`; choose reviewed catalog versions, or provide an explicit reason for no selection. |
 

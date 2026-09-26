@@ -6,6 +6,7 @@ import { normalizedRelativePath, resolveProjectAsset, writeExclusiveSnapshot } f
 import { digest, exists } from '../pipeline/stage-state.ts';
 import type { VideoSpec } from '../contracts.ts';
 import { workflowText } from './workflow.ts';
+import { validateBilingualScene, validateCharacterCopy } from './character.ts';
 
 export const COPY_FILE = 'copy-script.json';
 export interface CopyDraft {
@@ -126,7 +127,9 @@ export async function assertCopyApproved(root: string, project: string, expected
 
 /** The legacy scene contract uses narration itself as the spoken-caption text source. */
 export function copyDraftFromVideoSpec(spec: VideoSpec, revision: string): CopyDraft {
+  validateCharacterCopy(spec);
   for (const scene of spec.scenes) {
+    if (scene.character || (spec.brand.presentation === 'character' && !scene.authorPosterAssetId)) validateBilingualScene(scene);
     if (scene.workflow && workflowText(scene.workflow).some(word => !scene.onScreenText.includes(word))) {
       throw new Error(`Workflow copy must be included verbatim in reviewed onScreenText: ${scene.id}`);
     }
@@ -136,6 +139,7 @@ export function copyDraftFromVideoSpec(spec: VideoSpec, revision: string): CopyD
   const narration = spec.scenes.map(scene => scene.voiceover).filter(text);
   return { schemaVersion: '1.0', projectId: spec.projectId, productId, revision, narration,
     onScreenText: [...spec.scenes.flatMap(scene => scene.onScreenText),
+      ...spec.scenes.flatMap(scene => scene.bilingual ? [...scene.bilingual.onScreenText, ...(scene.bilingual.subtitle ? [scene.bilingual.subtitle] : [])] : []),
       ...(spec.generatorPolicy ? [spec.product.name, spec.generatorPolicy.marketing.brand, spec.generatorPolicy.marketing.screenAction, spec.generatorPolicy.marketing.displayDomain,
         ...(spec.product.example ? [`演示项目：${spec.product.example.name}`, spec.product.example.explanation] : [])] : []),
       ...(spec.authorContacts ? [spec.authorContacts.name, ...spec.authorContacts.items.map(item => `${item.label}：${item.value}`)] : [])],

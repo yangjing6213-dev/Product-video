@@ -30,6 +30,9 @@
     "projectId": {
       "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/projectId"
     },
+    "renderMode": {
+      "enum": ["hyperframes", "remotion"]
+    },
     "recipeVersion": {
       "type": "string",
       "minLength": 1
@@ -154,6 +157,7 @@
         "fallback"
       ],
       "properties": {
+        "readingHoldAfterSpeechSec": { "type": "number", "minimum": 0 },
         "authorPosterAssetId": {
           "$ref": "https://enhe.local/schemas/product-input.schema.json#/$defs/id"
         },
@@ -266,6 +270,8 @@
         "action": {
           "$ref": "#/$defs/sceneAction"
         },
+        "character": { "$ref": "https://enhe.local/schemas/character-stage.schema.json#/$defs/stage" },
+        "bilingual": { "$ref": "https://enhe.local/schemas/character-stage.schema.json#/$defs/bilingual" },
         "workflow": {
           "$ref": "#/$defs/sceneWorkflow"
         },
@@ -351,6 +357,7 @@
           "enum": [
             "focus-transfer",
             "workflow-progress",
+            "character-explain",
             "layer-assemble",
             "state-change",
             "before-after",

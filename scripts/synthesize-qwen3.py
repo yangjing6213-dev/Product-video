@@ -35,14 +35,16 @@ def spoken(text, pronunciation):
 
 
 def asr_prompt(scenes, pronunciation=None):
-    """Hint only actual reviewed Latin terms; never replace recognized words."""
+    """Hint vocabulary present in the reviewed speech; never replace recognized words."""
     text = spoken(' '.join(scene['voiceover'] for scene in scenes), pronunciation or {})
     terms = list(dict.fromkeys(re.findall(r'[A-Za-z][A-Za-z0-9]*(?: [A-Za-z][A-Za-z0-9]*)*', text)))
     # Display names such as Codex are not vocabulary hints when the approved map says 扣代克斯.
     compact = re.sub(r'\s+', '', text)
-    glossary = ['产品说明', '文案', '旁白', '字幕', '音乐', '本地项目', '封面', '分享图', '原稿', '文章配图',
+    glossary = ['讲得清楚', '中断后按原方案继续', '按原方案继续', '拓拓', '星比', '分镜', '给谁看', '产品说明', '文案', '旁白', '字幕', '音乐', '本地项目', '封面', '分享图', '原稿', '文章配图',
                 '在支持技能的扣代克斯中使用', '恩禾', '人工智能']
-    terms += [word for word in glossary if word in compact]
+    for word in glossary:
+        if word in compact and not any(word in term for term in terms):
+            terms.append(word)
     vocabulary = '、'.join(term[:80] for term in terms[:12])[:240]
     return '以下是简体中文产品解说。' + ('专有词：' + vocabulary + '。' if vocabulary else '')
 

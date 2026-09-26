@@ -46,6 +46,13 @@ class QwenAlignmentTests(unittest.TestCase):
         self.assertIn('恩禾', mapped)
         self.assertIn('在支持技能的扣代克斯中使用', mapped)
         self.assertNotIn('Codex', mapped)
+        character = self.runner.asr_prompt([{'voiceover':'给谁看？确认分镜，让拓拓和星比按原方案继续。'}])
+        for term in ['给谁看','分镜','拓拓','星比','原方案']:
+            self.assertIn(term, character)
+        self.assertNotIn('星比', other)
+        full = self.runner.asr_prompt([{'voiceover':'讲得清楚，拓拓和星比，分镜给谁看？文案、旁白、字幕、音乐，中断后按原方案继续，在支持技能的扣代克斯中使用恩禾。'}])
+        self.assertEqual(full.count('按原方案继续'), 1)
+        self.assertIn('恩禾', full)
         self.assertLess(len(self.runner.asr_prompt([{'voiceover': 'word ' * 1000}])), 320)
         # Hints never authorize replacement of a wrong recognized product name.
         with self.assertRaisesRegex(ValueError, 'ASR text'):

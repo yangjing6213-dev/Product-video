@@ -46,7 +46,7 @@ For new jobs, [AUTHOR-FRAMING.md](../../../docs/guides/AUTHOR-FRAMING.md) takes 
 
 ## Tool and media gate
 
-- HyperFrames lint, validate, and inspect complete successfully; each warning is repaired or specifically explained.
+- The selected renderer's checks complete successfully: HyperFrames lint/validate/inspect for the default mode, or the Remotion bundle/composition report for the explicit local Remotion mode. Each warning is repaired or specifically explained.
 - Draft render is playable and its contact sheet has been reviewed.
 - Whole-film MVP media decodes, is 1920x1080 at 30fps, lasts 30–60 seconds, and contains a video stream. R2 library smoke is 3–5 seconds; M1 motion is 8–12 seconds; approved later horizontal/vertical deliverables follow their specific contract. Probe each actual output against its own specification.
 - Required narration includes an audio stream, synchronized transcript, and acceptable silence analysis.

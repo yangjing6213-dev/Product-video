@@ -1,4 +1,4 @@
-# 推广视频生成 · Product Video
+# 恩禾产品视频工作室 · ENHE Product Video Studio
 
 **产品做出来了，介绍视频怎么做？**
 
@@ -6,13 +6,13 @@
 
 [English](README.en.md) · [查看示例效果](#五示例效果) · [安装方法](#六安装方法) · [恩禾官网](https://www.enhe-tech.com.cn/)
 
-![Product Video Studio 中文封面](docs/showcase/product-video-cover-zh-v01.png)
+更新记录见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 一、这个仓库是什么？
 
 这是一个配合 **Codex** 使用的本地产品视频制作工具，当前版本为 **0.1.0**。
 
-你提供产品资料，Codex 按仓库内的 Skill 梳理内容、写文案、安排镜头；你确认后，再使用 HyperFrames 制作动画，并完成配音、字幕、渲染和质量检查。
+你提供产品资料，Codex 按仓库内的 Skill 梳理内容、写文案、安排镜头；你确认后，可选择 **HyperFrames + GSAP**（默认）或 **Codex + Remotion**（本地可选）制作动画，并完成配音、字幕、渲染和质量检查。两种模式共享同一套文案确认、素材冻结和 QA 流程。
 
 它把“要讲什么”和“怎么做成视频”放进同一套工作流程。你可以检查文案、调整画面，也可以保存已确认的方案，之后接着做。
 
@@ -151,6 +151,16 @@ Codex 准备好任务输入、素材、分镜和动画文件后，项目命令�
 npm run video -- help
 ```
 
+开始生成前，选择一种渲染模式：`HyperFrames + GSAP` 是默认兼容模式；`Codex + Remotion` 是仅本地运行的可选 React 时间线。新任务可在初始化时固定选择，历史输入未写入 `renderMode` 时自动按 HyperFrames 处理：
+
+```powershell
+npm run video -- modes
+npm run video -- init --input product-input.json --renderer remotion
+npm run video -- run --project your-project-id --renderer remotion --resume
+```
+
+同一任务恢复时不能静默切换模式；需要换模式时建立新的项目变体。两种模式都必须先完成文案确认，Remotion 产物写入 `projects/<projectId>/renders/remotion/`，不会覆盖旧的 HyperFrames 视频。
+
 对已经准备好的任务，可继续执行（将 `your-project-id` 换成实际任务编号）：
 
 ```powershell
@@ -186,7 +196,7 @@ npm run video -- render --project your-project-id --quality high --resume
 2. **选择素材**：确认品牌、人物与声音来源，为新视频选择合适的新场景。
 3. **确认内容**：整理完整文案、屏幕文字、字幕与分镜。
 4. **确认视听方向**：检查封面、作者片尾、关键镜头和旁白。
-5. **制作与渲染**：冻结已确认素材，使用 HyperFrames 制作视频。
+5. **选择模式并渲染**：冻结已确认素材，选择 HyperFrames + GSAP（默认）或 Codex + Remotion（本地可选）制作视频。
 6. **检查成片**：查看字幕、排版、声音、时长和素材是否符合要求。
 7. **交付与复用**：保留视频、素材版本和报告；同一任务恢复时不随机换人、换景或换声。
 
@@ -218,7 +228,7 @@ Product-video/
 
 - **这是本地工作流程，不是云端一键生成平台。** 文案、分镜和画面由 Codex 按 Skill 创作，CLI 负责可重复执行的步骤。
 - **先确认文案，再生成视频。** 发布前还需检查画面、声音及素材的使用权。
-- **默认不接入付费 API 或云服务。** 不默认使用 Remotion、ElevenLabs、Captions AI、云渲染、数据库、Job API 或对象存储。
+- **默认不接入付费 API 或云服务。** HyperFrames + GSAP 默认启用；Remotion 只有在用户明确选择时在本地运行，不启用云渲染、数据库、Job API 或对象存储。Remotion 的许可边界见 [本地许可证说明](docs/security/REMOTION-LICENSE.md)。
 - **公开示例不等于免费素材包。** 代码采用 [Apache-2.0](LICENSE)；展示中的人物、品牌、声音和第三方内容另有权利边界，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 - **不要把隐私资料放进公开仓库。** Token、Cookie、未脱敏截图、参考录音与私人素材留在本地。
 - **换场景不能改变已确认风格。** 新视频更换真实背景；同一任务恢复时保留原人物、场景和冻结版本。

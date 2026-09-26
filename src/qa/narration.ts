@@ -3,14 +3,20 @@ import type { CheckResult, VideoSpec } from '../contracts.ts';
 /** The user-selected silent poster has its own reading time after spoken content. */
 export function narrationTimelineEnd(spec: VideoSpec): number | null | undefined {
   const last = spec.scenes.at(-1);
-  if (!last?.authorPosterAssetId) return last?.actualEndSec;
-  const previous = spec.scenes.at(-2);
-  if (last.voiceover.trim() || last.caption?.trim()) throw new Error('Author poster must be silent');
-  if (!previous || previous.actualEndSec !== last.actualStartSec) throw new Error('Author poster must be adjacent to the preceding narration scene');
-  return previous.actualEndSec;
+  const previous = last?.authorPosterAssetId ? spec.scenes.at(-2) : last;
+  if (spec.scenes.some(scene=>scene!==previous&&scene.readingHoldAfterSpeechSec!==undefined)) throw new Error('Reading hold after speech is only allowed on the final spoken scene');
+  if (last?.authorPosterAssetId) {
+    if (last.voiceover.trim() || last.caption?.trim()) throw new Error('Author poster must be silent');
+    if (!previous || previous.actualEndSec !== last.actualStartSec) throw new Error('Author poster must be adjacent to the preceding narration scene');
+  }
+  const hold=previous?.readingHoldAfterSpeechSec;
+  if (hold===undefined) return previous?.actualEndSec;
+  if (!Number.isFinite(hold) || hold<0 || previous?.actualStartSec==null || previous.actualEndSec==null || hold>=previous.actualEndSec-previous.actualStartSec || !previous.voiceover.trim()) throw new Error('Invalid final reading hold after speech');
+  // This visual hold never changes the WAV or ASR clock. Callers still compare this end against the actual audio duration.
+  return previous.actualEndSec-hold;
 }
 import { isDeepStrictEqual } from 'node:util';
-import { ACTIVE_GENERATOR_POLICY } from '../quality/policy.ts';
+import { isActiveGeneratorPolicy } from '../quality/policy.ts';
 import {
   applyPronunciationMap,
   assertNarrationProfile,
@@ -227,7 +233,7 @@ export function validateCurrentNarrationEvidence(
   spec: VideoSpec,
   options: CurrentNarrationEvidenceOptions = {},
 ): void {
-  if (!spec.generatorPolicy || !isDeepStrictEqual(spec.generatorPolicy, ACTIVE_GENERATOR_POLICY)) return;
+  if (!isActiveGeneratorPolicy(spec.generatorPolicy)) return;
   const evidence = record(evidenceValue, 'Current narration evidence');
   assertNarrationProfile(spec.audio.voiceProfile, evidence, spec.generatorPolicy.rulesSha256, spec.audio.deliveryMode);
   assertNarrationDirections(spec, evidence);

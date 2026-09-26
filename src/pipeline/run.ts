@@ -9,10 +9,13 @@ import { atomicJson, digest, exists, hashFiles, readState, runStage } from './st
 import { REPO, command, ensureSuccess, environment, filesUnder, hyperframes, recordCommand } from './tools.ts';
 import { inputFor, manifest, specFor, verifyProjectBrand } from './project.ts';
 import { captureWithFallback, requireCreative, selectNarration } from './gates.ts';
-import { compositionQa, writeQa } from './qa.ts';
+import { compositionQaForRenderer, writeQa } from './qa.ts';
 import { contactSheet, probeMedia, verifyMedia } from './media.ts';
 import { assertApprovedTranscript, assertVideoSpecCopyApproved } from '../quality/copy.ts';
+import { assertCharacterReview } from '../quality/character-review.ts';
 import { isActiveGeneratorPolicy, trustedGeneratorPolicy } from '../quality/policy.ts';
+import { assertRendererMatch, rendererOutputPath, rendererStageVersion, type RendererId } from './renderer.ts';
+import { renderRemotionProject } from '../remotion/render.ts';
 import { loadQwenEvidence, qwenEvidenceInputs } from '../qa/qwen-narration.ts';
 import { narrationEvidenceContext, voiceReuseEvidenceInputs } from './voice-reuse.ts';
 import {
@@ -474,9 +477,12 @@ export async function renderProject(
   quality: 'draft' | 'high',
   resume = true,
   compositionAlreadyChecked = false,
+  requestedRenderer?: RendererId,
 ): Promise<string> {
-  await verifyProjectBrand(project);
   const spec = await specFor(project);
+  const renderer = assertRendererMatch(spec, requestedRenderer);
+  await assertCharacterReview(path.resolve(project, '../..'), project, spec);
+  await verifyProjectBrand(project);
   if (spec.generatorPolicy) {
     await freezeGeneratorProject(project);
     if (quality === 'high') {
@@ -495,30 +501,49 @@ export async function renderProject(
   const warningReview = path.join(project, 'reports/lint-warning-review.json');
   if (existsSyncFile(warningReview)) sources.push(warningReview);
   if (spec.audio.narrationMode === 'hyperframes') sources.push(path.join(project, 'narration.wav'));
-  const fingerprint = await hashFiles(sources, { quality, version: 'hyperframes-0.8.33', fps: 30 });
-  const output = path.join(project, 'renders', quality === 'draft' ? 'draft.mp4' : 'final.mp4');
+  if (renderer === 'remotion') sources.push(...await filesUnder(path.join(REPO, 'src/remotion')));
+  const rendererBound = spec.renderMode !== undefined || requestedRenderer !== undefined;
+  const fingerprint = await hashFiles(sources, rendererBound
+    ? { quality, version: rendererStageVersion(renderer), renderer, fps: 30 }
+    : { quality, version: rendererStageVersion('hyperframes'), fps: 30 });
+  const output = rendererOutputPath(project, renderer, quality === 'draft' ? 'draft' : 'final');
+  const rendererEntry = renderer === 'hyperframes'
+    ? path.join(project, 'index.html')
+    : path.join(REPO, 'src/remotion/entry.tsx');
   const stage = quality === 'draft' ? 'draft' : 'final';
   await runStage(project, stage, fingerprint, resume, async () => {
     await assertVideoSpecCopyApproved(path.resolve(project, '../..'), project, spec);
-    if (!compositionAlreadyChecked) await compositionQa(project, spec);
+    if (!compositionAlreadyChecked) await compositionQaForRenderer(project, spec, renderer);
     await mkdir(path.dirname(output), { recursive: true });
     if (spec.generatorPolicy && await exists(output)) throw new Error('Existing video preserved; use --resume with an unchanged snapshot or create a new variant');
-    const result = await hyperframes(['render', project, '--quality', quality, '--fps', '30', '--workers', '4', '--output', output, '--strict'], REPO, 1200000);
-    await recordCommand(project, `render-${quality}`, result);
-    if (result.exitCode !== 0) {
-      await recordCommand(project, 'failure-doctor', await hyperframes(['doctor']));
-      await recordCommand(project, 'failure-info', await hyperframes(['info', project]));
+    await assertCharacterReview(path.resolve(project, '../..'), project, spec);
+    let durationMs: number;
+    if (renderer === 'hyperframes') {
+      const result = await hyperframes(['render', project, '--quality', quality, '--fps', '30', '--workers', '4', '--output', output, '--strict'], REPO, 1200000);
+      await recordCommand(project, `render-${quality}`, result);
+      if (result.exitCode !== 0) {
+        await recordCommand(project, 'failure-doctor', await hyperframes(['doctor']));
+        await recordCommand(project, 'failure-info', await hyperframes(['info', project]));
+      }
+      ensureSuccess(result, 'HyperFrames render');
+      durationMs = result.durationMs;
+    } else {
+      const evidence = await renderRemotionProject(project, spec, quality === 'draft' ? 'draft' : 'final', output);
+      durationMs = evidence.durationMs;
+      await atomicJson(path.join(project, `reports/remotion-${quality}-report.json`), { ...evidence, output: path.relative(project, output).replaceAll('\\', '/') });
     }
-    ensureSuccess(result, 'Render');
+    await assertCharacterReview(path.resolve(project, '../..'), project, spec);
     if (spec.generatorPolicy) await assertGeneratorSnapshot(project);
     const checks = await verifyMedia(output, project, spec);
     await atomicJson(path.join(project, `reports/${quality}-media-report.json`), { status: checks.some(c => c.status === 'FAIL') ? 'FAIL' : 'PASS', checks });
     if (checks.some(c => c.status === 'FAIL')) throw new Error('Render produced invalid media; see media report');
-    await atomicJson(path.join(project, `reports/render-${quality}-report.json`), { quality, output: path.relative(project, output).replaceAll('\\', '/'), durationMs: result.durationMs, exitCode: result.exitCode,
-      videoSha256: digest(await readFile(output)), specSha256: digest(await readFile(path.join(project, 'video-spec.json'))), entrySha256: digest(await readFile(path.join(project, 'index.html'))) });
+    await atomicJson(path.join(project, `reports/render-${quality}-report.json`), { renderer, quality, output: path.relative(project, output).replaceAll('\\', '/'), durationMs, exitCode: 0,
+      videoSha256: digest(await readFile(output)), specSha256: digest(await readFile(path.join(project, 'video-spec.json'))), entrySha256: digest(await readFile(rendererEntry)) });
     const mediaReport = path.join(project, `reports/${quality}-media-report.json`);
     const renderReport = path.join(project, `reports/render-${quality}-report.json`);
-    const commandReport = path.join(project, `reports/commands/render-${quality}.json`);
+    const commandReport = renderer === 'hyperframes'
+      ? path.join(project, `reports/commands/render-${quality}.json`)
+      : path.join(project, `reports/remotion-${quality}-report.json`);
     if (quality === 'high') await copyFile(renderReport, path.join(project, 'reports/render-report.json'));
     if (quality === 'draft') await recordFirstPlayableDraft(project, new Date().toISOString());
     return {
@@ -529,17 +554,19 @@ export async function renderProject(
         commandReport,
         ...(quality === 'high' ? [path.join(project, 'reports/render-report.json')] : []),
       ],
-      durationMs: result.durationMs,
+      durationMs,
     };
   }, STAGE_CONTRACT_VERSIONS[stage]);
   if (quality === 'draft') await recordFirstPlayableDraft(project);
   return output;
 }
 
-export async function runProject(project: string, resume: boolean, suppliedOnly = false, quality: 'draft' | 'high' = 'draft'): Promise<string> {
+export async function runProject(project: string, resume: boolean, suppliedOnly = false, quality: 'draft' | 'high' = 'draft', requestedRenderer?: RendererId): Promise<string> {
+  if (await exists(path.join(project, 'video-spec.json'))) await assertCharacterReview(path.resolve(project, '../..'), project, await specFor(project));
   await verifyProjectBrand(project);
   const runStarted = performance.now();
   const input = await inputFor(project);
+  const renderer = assertRendererMatch(input, requestedRenderer);
   if (input.generatorPolicy && !isActiveGeneratorPolicy(input.generatorPolicy)) {
     if (!trustedGeneratorPolicy(input.generatorPolicy)) throw new Error('Unknown or modified generator policy cannot be resumed');
     if (!await exists(path.join(project, 'resolved-creative-plan.json'))) {
@@ -581,6 +608,7 @@ export async function runProject(project: string, resume: boolean, suppliedOnly 
       return creative;
     });
     const spec = await specFor(project);
+    await assertCharacterReview(path.resolve(project, '../..'), project, spec);
     const voiceInputs = [path.join(project, 'video-spec.json')];
     if (spec.audio.narrationMode === 'external-audio') {
       const external = spec.assets.find(asset => asset.id === spec.audio.externalAudioAssetId);
@@ -596,7 +624,7 @@ export async function runProject(project: string, resume: boolean, suppliedOnly 
     await run('voice', await hashFiles(voiceInputs, { narrationMode: spec.audio.narrationMode,
       ...(spec.generatorPolicy ? { currentNarrationEvidenceVersion: 1 } : {}) }), () => voice(project));
     if (spec.generatorPolicy) await composeProject(project);
-    const sourceHash = await hashFiles([
+    const sourceFiles = [
       path.join(project, 'index.html'),
       ...creative,
       ...await filesUnder(path.join(project, 'assets')),
@@ -610,16 +638,20 @@ export async function runProject(project: string, resume: boolean, suppliedOnly 
         ? [path.join(project, 'reports/lint-warning-review.json')]
         : []),
       ...await voiceReuseEvidenceInputs(project),
-    ]);
+    ];
+    if (renderer === 'remotion') sourceFiles.push(...await filesUnder(path.join(REPO, 'src/remotion')));
+    const sourceHash = await hashFiles(sourceFiles, input.renderMode !== undefined || requestedRenderer !== undefined
+      ? { renderer, rendererVersion: rendererStageVersion(renderer) }
+      : null);
     await runStage(project, 'qa', sourceHash, resume, async () => ({
-      checks: await compositionQa(project, spec),
-      outputs: [
+      checks: await compositionQaForRenderer(project, spec, renderer),
+      outputs: renderer === 'hyperframes' ? [
         path.join(project, 'reports/browser-layout.json'),
         ...['lint', 'validate', 'inspect'].map(label => path.join(project, `reports/commands/hyperframes-${label}.json`)),
-      ],
+      ] : [],
     }), STAGE_CONTRACT_VERSIONS.qa);
-    const draft = await renderProject(project, 'draft', resume, true);
-    const final = quality === 'high' || !spec.generatorPolicy ? await renderProject(project, 'high', resume, true) : draft;
+    const draft = await renderProject(project, 'draft', resume, true, requestedRenderer);
+    const final = quality === 'high' || !spec.generatorPolicy ? await renderProject(project, 'high', resume, true, requestedRenderer) : draft;
     await run('media', await hashFiles([final, path.join(project, 'video-spec.json')]), async () => {
       const previous = JSON.parse(await readFile(path.join(project, 'reports/qa-report.json'), 'utf8')) as { checks: CheckResult[] };
       const checks = [...previous.checks, ...await verifyMedia(final, project, spec)];
@@ -647,7 +679,7 @@ interface ScorecardSummary {
 
 async function scorecardSummary(project: string, input: ProductInput): Promise<ScorecardSummary> {
   const scorecardFile = path.join(project, 'reports/scorecard.json');
-  const finalVideo = path.join(project, 'renders/final.mp4');
+  const finalVideo = rendererOutputPath(project, assertRendererMatch(input), 'final');
   if (!await exists(scorecardFile) || !await exists(finalVideo)) {
     return { benchmarkStatus: null, manualCorrectionMinutes: null };
   }
@@ -771,9 +803,11 @@ async function writeRunReport(
   const creative = await creativeVersions(project);
   const commands = await commandSummaries(project);
   const qa = await qaSummary(project);
+  const renderer = assertRendererMatch(input);
   const artifacts = {
-    draft: await existingProjectPath(project, 'renders/draft.mp4'),
-    final: await existingProjectPath(project, 'renders/final.mp4'),
+    renderer,
+    draft: await existingProjectPath(project, projectRelative(project, rendererOutputPath(project, renderer, 'draft'))),
+    final: await existingProjectPath(project, projectRelative(project, rendererOutputPath(project, renderer, 'final'))),
     contactSheet: await existingProjectPath(project, 'reports/contact-sheet.jpg'),
     scorecard: await existingProjectPath(project, 'reports/scorecard.json'),
   };
@@ -793,7 +827,7 @@ async function writeRunReport(
     inputHash,
     recipeVersion: creative.recipeVersion,
     promptVersions: creative.promptVersions,
-    versions: { hyperframes: '0.8.33', node: process.version, pipeline: '1.0', stageContracts: STAGE_CONTRACT_VERSIONS },
+    versions: { hyperframes: '0.8.33', remotion: '4.0.529', renderer, node: process.version, pipeline: '1.0', stageContracts: STAGE_CONTRACT_VERSIONS },
     stages: state.stages,
     status: stageStatus,
     stageStatus,

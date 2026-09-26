@@ -14,6 +14,9 @@ The versions below are pinned in `package.json` and `package-lock.json`.
 | Ajv | 8.20.0 | MIT | <https://github.com/ajv-validator/ajv> |
 | GSAP | 3.14.2 | GSAP Standard “No Charge” License; this is a separate, non-Apache license with permitted-use restrictions | <https://gsap.com/standard-license/> |
 | HyperFrames | 0.8.33 | Apache-2.0 | <https://github.com/heygen-com/hyperframes> |
+| Remotion | 4.0.529 | Remotion License (source available; not Apache-2.0) | <https://www.remotion.dev/license> |
+| React / React DOM | 19.3.0 | MIT | <https://github.com/facebook/react> |
+| @remotion/bundler / @remotion/renderer | 4.0.529 | Remotion License (source available; not Apache-2.0) | <https://www.remotion.dev/license> |
 | Puppeteer Core | 25.10.0 | Apache-2.0 | <https://github.com/puppeteer/puppeteer> |
 | ffprobe-static | 3.1.0 | MIT for the npm wrapper/package; an installed FFprobe executable remains subject to the applicable FFmpeg build license | <https://github.com/joshwnj/ffprobe-static> |
 | TypeScript | 7.0.2 | Apache-2.0 | <https://github.com/microsoft/TypeScript> |

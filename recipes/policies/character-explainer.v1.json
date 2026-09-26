@@ -1,0 +1,15 @@
+{
+  "version": "EPVS-CHARACTER-EXPLAINER.v1",
+  "audience": "ordinary-ai-users",
+  "marketing": {
+    "brand": "恩禾 ENHE AI",
+    "url": "https://www.enhe-tech.com.cn",
+    "displayDomain": "www.enhe-tech.com.cn",
+    "screenAction": "访问恩禾官网，获取更多AI工具和解决方案。",
+    "spokenAction": "访问恩禾官网，获取更多AI工具和解决方案。"
+  },
+  "authorEnding": "contacts-secondary",
+  "voiceAcceptance": "REQUIRED",
+  "subtitles": "transparent",
+  "ipCharacters": "authorized-library"
+}

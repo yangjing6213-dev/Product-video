@@ -11,7 +11,7 @@ export interface GeneratorPolicy {
   authorEnding: 'brand-signoff' | 'contacts-secondary';
   voiceAcceptance: 'REQUIRED';
   subtitles: 'transparent';
-  ipCharacters: 'off';
+  ipCharacters: 'off' | 'authorized-library';
   rulesSha256: string;
 }
 
@@ -22,13 +22,14 @@ const policy = (file: string): GeneratorPolicy => {
 export const LEGACY_GENERATOR_POLICY_V1 = policy('generator-quality.v1.json');
 export const LEGACY_GENERATOR_POLICY_V2 = policy('generator-quality.v2.json');
 export const ACTIVE_GENERATOR_POLICY = policy('generator-quality.v3.json');
+export const CHARACTER_GENERATOR_POLICY = policy('character-explainer.v1.json');
 
 export function trustedGeneratorPolicy(value: unknown): GeneratorPolicy | undefined {
-  return [ACTIVE_GENERATOR_POLICY, LEGACY_GENERATOR_POLICY_V2, LEGACY_GENERATOR_POLICY_V1].find(item => isDeepStrictEqual(value, item));
+  return [ACTIVE_GENERATOR_POLICY, CHARACTER_GENERATOR_POLICY, LEGACY_GENERATOR_POLICY_V2, LEGACY_GENERATOR_POLICY_V1].find(item => isDeepStrictEqual(value, item));
 }
 
 export function isActiveGeneratorPolicy(value: unknown): value is GeneratorPolicy {
-  return isDeepStrictEqual(value, ACTIVE_GENERATOR_POLICY);
+  return isDeepStrictEqual(value, ACTIVE_GENERATOR_POLICY) || isDeepStrictEqual(value, CHARACTER_GENERATOR_POLICY);
 }
 
 /** Applied only to a new task. Stored historical inputs are never implicitly upgraded. */
@@ -36,12 +37,13 @@ export function resolveGeneratorInput(value: unknown, authorContacts?: unknown):
   if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
   const input = structuredClone(value) as Record<string, any>;
   if (!input.product || !input.audio || !input.captions) return input;
-  if (input.generatorPolicy && !isDeepStrictEqual(input.generatorPolicy, ACTIVE_GENERATOR_POLICY)) {
+  const selectedPolicy = input.brand?.presentation === 'character' ? CHARACTER_GENERATOR_POLICY : ACTIVE_GENERATOR_POLICY;
+  if (input.generatorPolicy && !isDeepStrictEqual(input.generatorPolicy, selectedPolicy)) {
     throw new Error('New tasks require the active generator policy; preserve old plans and create an explicit new variant');
   }
-  input.generatorPolicy = structuredClone(ACTIVE_GENERATOR_POLICY);
+  input.generatorPolicy = structuredClone(selectedPolicy);
   if (input.brand) input.brand.presentation ??= 'workflow';
-  if (input.brand) input.brand.visualStyle ??= 'editorial-v2';
+  if (input.brand) input.brand.visualStyle ??= input.brand.presentation === 'character' ? 'sketch-v1' : 'editorial-v2';
   input.audio.deliveryMode ??= 'natural';
   if (authorContacts !== undefined) {
     if (input.authorContacts !== undefined && !isDeepStrictEqual(input.authorContacts, authorContacts)) throw new Error('Author contacts differ from the complete authorized local profile; preserve the existing profile and explicitly review a new contact variant');
@@ -49,14 +51,14 @@ export function resolveGeneratorInput(value: unknown, authorContacts?: unknown):
   }
   input.product.targetAudience ??= ['普通 AI 用户'];
   if (input.product.targetAudience.length === 0) input.product.targetAudience = ['普通 AI 用户'];
-  input.product.cta = { label: ACTIVE_GENERATOR_POLICY.marketing.screenAction, url: ACTIVE_GENERATOR_POLICY.marketing.url };
+  input.product.cta = { label: selectedPolicy.marketing.screenAction, url: selectedPolicy.marketing.url };
   input.audio.voice ??= '';
   input.captions.style = ACTIVE_GENERATOR_POLICY.subtitles;
   return input;
 }
 
 /** Logical/source checks are evidence of consistency, never of visual or vocal quality. */
-export function checkGeneratorSpec(spec: VideoSpec, expectedPolicy: GeneratorPolicy = ACTIVE_GENERATOR_POLICY): CheckResult[] {
+export function checkGeneratorSpec(spec: VideoSpec, expectedPolicy: GeneratorPolicy = spec.brand.presentation === 'character' ? CHARACTER_GENERATOR_POLICY : ACTIVE_GENERATOR_POLICY): CheckResult[] {
   if (!spec.generatorPolicy) return [];
   const policy = spec.generatorPolicy;
   const expected = trustedGeneratorPolicy(expectedPolicy);

@@ -1,7 +1,7 @@
 {
   "name": "enhe-product-video-studio",
   "version": "0.1.0",
-  "description": "Local HyperFrames product-video workflow with Mandarin narration, subtitles, and evidence-based QA.",
+  "description": "Local HyperFrames-default product-video workflow with optional Remotion rendering, Mandarin narration, subtitles, and evidence-based QA.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -38,9 +38,17 @@
     "lint": "node scripts/check-source.mjs"
   },
   "dependencies": {
+    "@remotion/bundler": "4.0.529",
+    "@remotion/renderer": "4.0.529",
+    "@types/react": "19.2.3",
+    "@types/react-dom": "19.2.3",
     "ajv": "8.20.0",
+    "caniuse-lite": "1.0.30001810",
     "gsap": "3.14.2",
-    "hyperframes": "0.8.33"
+    "hyperframes": "0.8.33",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "remotion": "4.0.529"
   },
   "devDependencies": {
     "@types/node": "26.5.0",

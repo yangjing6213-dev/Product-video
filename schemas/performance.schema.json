@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://enhe.local/schemas/performance.schema.json",
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "rig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "tuotuo",
+            "xinbi",
+            "stickman",
+            "custom"
+          ]
+        },
+        "parts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "head",
+            "body",
+            "upperArm",
+            "forearm",
+            "hand",
+            "thigh",
+            "shin",
+            "foot"
+          ],
+          "properties": {
+            "head": {
+              "$ref": "#/$defs/id"
+            },
+            "body": {
+              "$ref": "#/$defs/id"
+            },
+            "upperArm": {
+              "$ref": "#/$defs/id"
+            },
+            "forearm": {
+              "$ref": "#/$defs/id"
+            },
+            "hand": {
+              "$ref": "#/$defs/id"
+            },
+            "thigh": {
+              "$ref": "#/$defs/id"
+            },
+            "shin": {
+              "$ref": "#/$defs/id"
+            },
+            "foot": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        },
+        "vector": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "color",
+            "head",
+            "body"
+          ],
+          "properties": {
+            "color": {
+              "type": "string",
+              "pattern": "^#[0-9A-Fa-f]{6}$"
+            },
+            "head": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 24000
+            },
+            "body": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 24000
+            }
+          }
+        }
+      }
+    },
+    "performance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "fact",
+        "sourceField",
+        "objective",
+        "obstacle",
+        "outcome",
+        "roles",
+        "props",
+        "cues"
+      ],
+      "properties": {
+        "version": {
+          "const": "performance-v1"
+        },
+        "fact": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceField": {
+          "enum": [
+            "product.primaryProblem",
+            "product.features",
+            "product.valueProposition"
+          ]
+        },
+        "objective": {
+          "type": "string",
+          "minLength": 1
+        },
+        "obstacle": {
+          "type": "string",
+          "minLength": 1
+        },
+        "outcome": {
+          "type": "string",
+          "minLength": 1
+        },
+        "roles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "actor",
+              "role"
+            ],
+            "properties": {
+              "actor": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "role": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "props": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "kind",
+              "textIndices",
+              "x",
+              "y"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "kind": {
+                "enum": [
+                  "document",
+                  "image",
+                  "audio",
+                  "timeline",
+                  "archive",
+                  "link"
+                ]
+              },
+              "textIndices": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "x": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1450
+              },
+              "y": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 430
+              }
+            }
+          }
+        },
+        "cues": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "startFrame",
+              "endFrame",
+              "actor",
+              "verb",
+              "propId",
+              "fromX",
+              "toX",
+              "meaning"
+            ],
+            "properties": {
+              "startFrame": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "endFrame": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "actor": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "verb": {
+                "enum": [
+                  "search",
+                  "walk",
+                  "gather",
+                  "handoff",
+                  "place",
+                  "connect",
+                  "point",
+                  "celebrate"
+                ]
+              },
+              "propId": {
+                "$ref": "#/$defs/id"
+              },
+              "fromX": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1400
+              },
+              "toX": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1400
+              },
+              "receiver": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "meaning": {
+                "type": "string",
+                "minLength": 1
+              },
+              "destination": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "properties": {
+                  "x": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1450
+                  },
+                  "y": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 430
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -24,6 +24,9 @@
     "projectId": {
       "$ref": "#/$defs/projectId"
     },
+    "renderMode": {
+      "enum": ["hyperframes", "remotion"]
+    },
     "product": {
       "$ref": "#/$defs/product"
     },
@@ -281,11 +284,11 @@
         },
         "presentation": {
           "enum": [
-            "workflow"
+            "workflow", "character"
           ]
         },
         "visualStyle": {
-          "enum": ["editorial-v1", "editorial-v2"]
+          "enum": ["editorial-v1", "editorial-v2", "sketch-v1"]
         },
         "canvas": {
           "enum": [
@@ -413,6 +416,9 @@
             }
           }
         },
+        "characterPoses": { "$ref": "https://enhe.local/schemas/character-stage.schema.json#/$defs/poses" },
+        "characterRig": { "$ref": "https://enhe.local/schemas/performance.schema.json#/$defs/rig" },
+        "characterColor": { "enum": ["monochrome", "original"] },
         "width": {
           "type": "integer",
           "minimum": 1
@@ -736,7 +742,7 @@
           "const": "transparent"
         },
         "ipCharacters": {
-          "const": "off"
+          "enum": ["off", "authorized-library"]
         },
         "rulesSha256": {
           "type": "string",

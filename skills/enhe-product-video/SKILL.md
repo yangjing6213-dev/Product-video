@@ -5,7 +5,7 @@ description: Use when a user explicitly asks to generate a product introduction 
 
 # ENHE Product Video
 
-Create truthful product videos with Codex-authored creative artifacts and HyperFrames-first local rendering. Product evidence, authorized assets, and the current task's acceptance contract determine the story and duration. Existing 30–60 second MVP contracts remain available; a quality-repair task follows its own sample and approval gates.
+Create truthful product videos with Codex-authored creative artifacts and HyperFrames-default local rendering. Product evidence, authorized assets, and the current task's acceptance contract determine the story and duration. Existing 30–60 second MVP contracts remain available; a quality-repair task follows its own sample and approval gates. New jobs may explicitly choose the local Remotion renderer; the shared copy, assets, voice, captions, QA and approval gates remain unchanged.
 
 ## Read first
 
@@ -16,7 +16,16 @@ Create truthful product videos with Codex-authored creative artifacts and HyperF
 5. Apply [references/qa-checklist.md](references/qa-checklist.md) before final rendering and reporting.
 6. When the user requests 中文旁白 (local Chinese narration) or Chinese subtitles, read the **current new-task entry** in [the Chinese TTS guide](../../docs/guides/CHINESE-TTS.md) before authoring audio. Its historical benchmark replay section does not replace the normal `video voice` route.
 7. For every new job, read [the IP library guide](../../docs/guides/IP-LIBRARY.md), select reviewed assets from the project catalog, and freeze the exact versions before preview or rendering.
-8. For all current new jobs, follow [the active generator guide](../../docs/guides/GENERATOR-QUALITY.md) and `recipes/policies/generator-quality.v3.json`. This current policy and the user's explicit changes override historical R2/MVP examples below.
+8. By default, follow [the active generator guide](../../docs/guides/GENERATOR-QUALITY.md) and `recipes/policies/generator-quality.v3.json`. When the user explicitly requests a character explainer, use the opt-in mode below. Never migrate previously frozen jobs to it implicitly.
+
+## Renderer choice
+
+Before the first generation, present two choices:
+
+- **HyperFrames + GSAP** — the default and the compatible path for historical jobs.
+- **Codex + Remotion** — an optional local React timeline for jobs that explicitly request it.
+
+Store the choice as `renderMode` in the frozen input. Historical inputs without this field resolve to `hyperframes`. A resumed job cannot silently switch renderer; use a new project variant when a different renderer is needed. The command equivalents are `--renderer hyperframes` and `--renderer remotion` on `init`, `qa`, `render`, and `run`. Both modes require the same copy confirmation before speech or video generation and both write local reports and MP4 files only.
 
 ## Cover and author framing for every new task
 
@@ -36,13 +45,45 @@ The only daily brand source is `assets/brand/enhe/ip/catalog.json`. New inputs d
 
 ## Quality-repair gate
 
+### Explicit character explainer mode
+
+Only an explicit character-animation request selects `brand.presentation: "character"`, `brand.visualStyle: "sketch-v1"` and `recipes/policies/character-explainer.v1.json`. Other tasks retain the existing no-IP default. Use the existing normal init, copy, voice, compose, freeze and render commands; no separate rendering backend.
+
+**New acted explainers use `Scene.character.performance` (`performance-v1`).** First turn actual product evidence into a scene-specific script: cited fact → actor role and goal → obstacle → physical action on a story object → observable outcome → reviewed bilingual explanation. `fact` must exactly match the cited product field (a feature's name or benefit for `product.features`); the dramatic adaptation belongs in `objective`, `obstacle`, `outcome` and cue `meaning`. A filled contract is not proof of a truthful or engaging story. Review the actual product against the script. Never substitute a repeated pair of idle/explain poses for enacted events.
+
+Follow [the character performance guide](../../docs/guides/CHARACTER-PERFORMANCE.md). Present three explicit choices before production: TUOTUO + XINBI, stick figures, or custom local IP. Generate an actual joint-motion preview and the local `character-options` page. An upload or a selected option is not automatic approval. A new rig derived from an approved raster requires its own appearance/action review. A custom single image stays `PREPARATION_REQUIRED` until all eight authorized transparent body parts are prepared and reviewed; never attach the company's rig behind a different uploaded picture. Record only an actual user instruction with the exact frozen review hash.
+
+The company/stickman `character-performance-v2` previews were explicitly rejected for mechanical acting and changed character appearance. Do not reuse those approvals or present them as current accepted candidates. When the user has only flat artwork, prepare the needed layers locally instead of requiring a PSD from them. Keep the original pixels, facial design and proportions; disclose any reconstructed hidden joint areas. The six-layer source SVG + rig JSON format now has a separate APPEARANCE_ONLY user decision; preserve its historical frozen manifest and bind the new decision to the exact SVG hashes. This does not approve motion or production. The format remains review-only, not yet supported by the eight-part production contract above.
+
+For source-pixel acting, author scene-specific attention, anticipation, elbow motion, prop contact and follow-through; preserve planted feet and the accepted face. Use original alternate poses only where the scene motivates them, with a deliberate shot transition. Inspect actual blink, shoulder and hand pixels at action peaks as well as forward/reverse seek stability. Do not substitute looping pose swaps for acting, stretch a frontal face to invent a side view, or describe a local handoff test as feature-film animation. Keep appearance, action quality and production acceptance separate. The current source-acting implementation covers a bounded 22-second local sample; full-body walking, reliable profile/back views and normal production integration remain outstanding.
+
+Performance scenes use exactly one licensed real scene photograph relevant to the product. Do not add a paper board, card base, duplicate blurred background or CSS pseudo-panel behind the characters. Character SVGs have true external transparency. Inspect actual pixels and border alpha; neither PNG/RGBA metadata nor a white matching card proves transparency. Keep explanatory words and subtitles free of filled boxes. Preserve the separately approved author ending and audio bytes. The historical paper/atlas paragraphs below apply only to old frozen jobs or a new explicit request for that treatment, not the new real-scene performance mode.
+
+Author a product-specific opening with the project name and pain point, then explain input, decisions, operations and outcome. For an approximately 60-second request, plan 55–65 seconds including the separately held author ending; use measured narration timing without stretching or speeding up the approved voice to fit. Keep the exact website CTA and domain visibly in the final product scene, before the author poster.
+
+For black-outline requests, use white paper, black contours, white/empty interiors and matching monochrome diagram elements. No colored fills, gradients, glossy highlights or photographic main-scene backgrounds. Preserve recognizable supplied shapes; XINBI's approved shape includes arms. Treat source images as shape references when the user explicitly rejects their coloring. Preserve the user's separate existing author-poster treatment.
+
+Register pose atlases as versioned private catalog derivatives, inspect real dimensions and transparency, and retain original bytes. An `Asset.characterPoses` declares `idle` and `explain` original-pixel crop boxes. Every actor's asset ID must match a pinned approved library selection; ordinary `license: owned` metadata cannot substitute for review. Normal generation verifies runtime bytes against the frozen library. Keep static candidates `UNREVIEWED` until an actual scoped user decision; technical fixture approval never approves company assets.
+
+If the user explicitly selects a colored source atlas, retain its exact bytes and set that actor's `characterColor: "original"`; the default remains `"monochrome"`. This scoped character choice does not recolor the scene or migrate old tasks. Crop poses at a shared source scale with preserved aspect ratios and a common baseline; verify both pose dimensions and seek stability in the browser.
+
+Each main scene uses `Scene.character` with one or two actors, one to four meaningful panels, and bounded semantic beats. `textIndices` refer to its reviewed screen text; `bilingual.onScreenText` contains a complete paired translation and `bilingual.subtitle` contains the full semantic translation of the Chinese narration. Website addresses are displayed once when both language strings are identical. English screen and subtitle words participate in the immutable copy hash. The existing author poster is a bilingual exception only when the user keeps that ending unchanged.
+
+English subtitle timing follows the measured first/last Chinese narration cue of each semantic scene; it is not word-level English alignment. Validate reading length and space at actual resolution. Pose changes and path progression use the shared finite GSAP timeline; test exact beat boundaries with forward/reverse/direct seeking. A pose atlas supports bounded pose transitions, not arbitrary joint-rigged acting. Confirm character design and full new copy before new speech or video synthesis, while preserving selected voice parameters and all old recordings.
+
+When the user requests a real environment, select a licensed photograph relevant to that product and declare `backgroundAssetId`; maintain legibility through framing, exposure and readable text, without an additional display surface. Preserve approved recording bytes through the normal visual-only reuse entry. A final silent website hold may be explicitly declared with `Scene.readingHoldAfterSpeechSec` only on the last spoken scene; subtract it only when validating the speech end against the actual WAV duration. All cue, copy and ASR checks still apply. Report voiced duration and silent reading time separately; extra hold time does not prove a longer substantive explanation.
+
+### Shared approval rules
+
 Every video now has a separate copy approval gate before speech synthesis or a new render, including silent samples. Present the complete narration, on-screen text (including editable author-ending text), matching subtitles, and CTA to the user. Freeze the reviewed version in that video's `copy-script.json`; record only the user's actual explicit decision and reviewed `copySha256` through the repository quality CLI. Follow [the copy review guide](../../docs/guides/COPY-REVIEW.md). Do not interpret acceptance of motion, IP/background direction, a voice ID, or engineering QA as copy approval or final film approval.
 
 Bind `copy.sha256` in new frozen creative plans. A different word, subtitle, screen label, or CTA requires a newly reviewed copy/video variant. Scene, font, timing, or vocal delivery changes within the approved wording do not revoke copy approval. Historical byte-identical video caches may be read without fabricated retrospective approvals; generating a new video from an old plan requires the new gate. Preserve current user decisions in their scoped records rather than rewriting old candidate acceptance.
 
 The current M1 produces two representative frames, an 8–12 second subject-action and voice sample, and up to three authorized Mandarin male voice candidates for concentrated user review. Human acceptance of visual, motion and voice choices is required before formal M2 production. Library migration, metadata checks, a model score, or a playable video cannot satisfy that gate.
 
-Use the original company Logo, designed display typography, clear body/subtitle text, purposeful subject actions and transitions. Current new jobs use no IP characters. The requested voice is a young adult male speaking standard Mandarin with natural promotional energy; an installed backend or a historic voice approval does not meet this requirement. Reuse valid frozen audio without repeat generation. Keep unaccepted visual and voice choices as candidates; do not install them as permanent Skill defaults. Review third-party methods and licenses before adapting them; retain HyperFrames as the default renderer.
+Use the original company Logo, designed display typography, clear body/subtitle text, purposeful subject actions and transitions. Default new jobs use no IP characters unless the user selects the explicit character mode above. The requested voice is a young adult male speaking standard Mandarin with natural promotional energy; an installed backend or a historic voice approval does not meet this requirement. Reuse valid frozen audio without repeat generation. Keep unaccepted visual and voice choices as candidates; do not install them as permanent Skill defaults. Review third-party methods and licenses before adapting them; retain HyperFrames as the default renderer.
+
+Remotion remains local and opt-in; review its license boundary before any public automation or distribution.
 
 Current content is for ordinary AI users: show real product evidence, label demonstration projects and state actual prerequisites. Source URLs are facts; the primary screen and spoken CTA lead to the ENHE homepage. **Preserve all five authorized author contacts** in a separate editable secondary ending block: GitHub, X / Twitter, website, WeChat and email. Load their private local profile during init and include them in the frozen copy. Do not delete contacts based on the superseded attachment clause; do not restore a full CV or portrait by assumption. Give the contact block sufficient reading time. Keep captions transparent and clear of the CTA and evidence. Licensed background music supports the voice without hiding mechanical speech. Common `Scene.action` primitives must act on real assets/layers; do not use a product-name branch or one whole-film template with labels swapped.
 
@@ -72,8 +113,8 @@ instruction support does not apply to Base reference synthesis. It is not the
 selected B production entry or a source of phoneme/word alignment, and its
 presence does not authorize new candidates after the user has selected B.
 
-- Prefer the repository CLI, HyperFrames, FFmpeg, and FFprobe.
-- Do not enable paid APIs, ElevenLabs, Captions AI, Remotion, databases, cloud services, publishing, or unrelated project changes by default. Actual cost, external asset upload, renderer replacement, and public distribution require the task's explicit authorization.
+- Prefer the repository CLI, HyperFrames, FFmpeg, FFprobe, and the pinned local Remotion adapter when explicitly selected.
+- Do not enable paid APIs, ElevenLabs, Captions AI, cloud services, databases, publishing, or unrelated project changes by default. Remotion is opt-in and local only; actual cost, external asset upload, renderer replacement, and public distribution require the task's explicit authorization.
 - Do not bypass login, CAPTCHA, paywalls, anti-bot controls, or access restrictions.
 - Do not expose credentials, cookies, private data, or absolute local paths in public-facing artifacts.
 - Do not use `license=unknown` material in final output.

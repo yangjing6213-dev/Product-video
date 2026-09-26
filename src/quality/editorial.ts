@@ -11,6 +11,8 @@ export function authorRegionStyle(region: [number, number, number, number], widt
 
 /** Versioned, deterministic layout; frozen specifications without this style retain their original renderer. */
 export function editorialCss(spec: VideoSpec, colors: { background: string; foreground: string; accent: string }): string {
+  // The separate ENHE poster keeps its accepted dark framing even on a white main canvas.
+  if (spec.brand.visualStyle === 'sketch-v1') return '.sketch-v1 .author-poster-scene{background:#071827}' + authorPosterCss('.sketch-v1', '#071827');
   if (spec.brand.visualStyle !== 'editorial-v1' && spec.brand.visualStyle !== 'editorial-v2') return '';
   const bg = colors.background.slice(0, 7), fg = colors.foreground.slice(0, 7), accent = colors.accent.slice(0, 7);
   const family = JSON.stringify(spec.brand.fontFamilies[0]).replaceAll('</', '<\\/');
@@ -89,14 +91,7 @@ export function editorialCss(spec: VideoSpec, colors: { background: string; fore
 .editorial-v1.portrait .centered-result .media-stack{height:auto}
 .editorial-v1.portrait .centered-result .evidence-frame,.editorial-v1.portrait .centered-result .layered-evidence{width:100%;height:auto!important}
 .editorial-v1.portrait .centered-result .evidence-media{width:100%;height:auto}
-.editorial-v1 .author-poster-background{filter:blur(18px) brightness(.85);transform:scale(1.04)}
-.editorial-v1 .author-reframed .author-poster-background{filter:blur(20px) brightness(.55)}
-.editorial-v1 .author-region{position:absolute;margin:0;overflow:hidden;z-index:2}
-.editorial-v1 .author-region img{position:absolute;max-width:none;max-height:none}
-.editorial-v1.landscape .author-portrait-region{left:0;bottom:0;height:100%;width:auto}
-.editorial-v1.landscape .author-information-region{right:4%;top:50%;width:49%;height:auto;transform:translateY(-50%);border-radius:24px;box-shadow:0 20px 80px ${bg}66}
-.editorial-v1.portrait .author-portrait-region{left:0;top:0;width:100%;height:auto}
-.editorial-v1.portrait .author-information-region{left:5%;bottom:5%;width:90%;height:auto;border-radius:24px;box-shadow:0 20px 80px ${bg}66}
+${authorPosterCss('.editorial-v1', bg)}
 `;
   if (spec.brand.visualStyle === 'editorial-v1') return base;
   // The original ENHE PNG has 208px of optical inset at 682px high; retain its bytes.
@@ -118,4 +113,16 @@ export function editorialCss(spec: VideoSpec, colors: { background: string; fore
 .editorial-v2 .feature-row-4 .workflow-card-title{font-size:40px}
 .editorial-v2 .workflow-card:before{height:3px;right:auto;width:44px;left:24px;top:12px}
 `;
+}
+
+/** Keep the same crop geometry when the main presentation changes. */
+function authorPosterCss(scope: string, bg: string): string {
+  return `${scope} .author-poster-background{filter:blur(18px) brightness(.85);transform:scale(1.04)}
+${scope} .author-reframed .author-poster-background{filter:blur(20px) brightness(.55)}
+${scope} .author-region{position:absolute;margin:0;overflow:hidden;z-index:2}
+${scope} .author-region img{position:absolute;max-width:none;max-height:none}
+${scope}.landscape .author-portrait-region{left:0;bottom:0;height:100%;width:auto}
+${scope}.landscape .author-information-region{right:4%;top:50%;width:49%;height:auto;transform:translateY(-50%);border-radius:24px;box-shadow:0 20px 80px ${bg}66}
+${scope}.portrait .author-portrait-region{left:0;top:0;width:100%;height:auto}
+${scope}.portrait .author-information-region{left:5%;bottom:5%;width:90%;height:auto;border-radius:24px;box-shadow:0 20px 80px ${bg}66}`;
 }

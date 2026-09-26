@@ -8,6 +8,8 @@ import {
 } from './motion.ts';
 import { workflowText, type SceneWorkflow, type WorkflowCard } from './workflow.ts';
 import { authorRegionStyle, editorialCss } from './editorial.ts';
+import { characterCss, renderCharacterStage, validateBilingualScene, validateCharacterStage, validateCharacterSelection, validateCharacterCopy } from './character.ts';
+import { performanceCss, validatePerformance } from './performance.ts';
 
 export interface NarrationCue {
   id?: string;
@@ -238,10 +240,12 @@ function renderScene(
   const sceneClasses = ['scene'];
   if (isSignoff && hasPosterEnding) sceneClasses.push('poster-signoff');
   if (isFinal && contacts) sceneClasses.push('has-contacts');
+  if (scene.character) sceneClasses.push('character-scene');
+  if (scene.character?.performance) sceneClasses.push('performance-scene');
   if (scene.workflow) sceneClasses.push('workflow-scene');
   else if (spec.brand.presentation === 'workflow') sceneClasses.push('centered-result');
   const sceneClass = sceneClasses.join(' ');
-  const body = scene.workflow
+  const body = scene.character ? renderCharacterStage(scene,assets,spec.generatorPolicy?.marketing) : scene.workflow
     ? renderWorkflowStage(scene.workflow, `${screenCopy}${example}`, scene, timing, assets, sceneIndex)
     : `<div class="copy-column">${screenCopy}${example}${signoff}</div><div class="evidence-stage"><div class="media-stack">${evidence}</div></div>`;
   const brandText = spec.brand.visualStyle
@@ -274,6 +278,8 @@ function renderCss(spec: ComposableVideoSpec, colors: ReturnType<typeof palette>
 
 /** Build a deterministic HyperFrames composition from structured scene actions and real assets. */
 export function composeVideo(input: VideoSpec, options: ComposeVideoOptions): string {
+  validateCharacterSelection(input);
+  validateCharacterCopy(input);
   const spec = input as ComposableVideoSpec;
   if (!spec.scenes.length) throw new Error('Composition requires at least one scene');
   localPath(options.gsapPath, 'GSAP');
@@ -296,6 +302,12 @@ export function composeVideo(input: VideoSpec, options: ComposeVideoOptions): st
   if (options.narration) localPath(options.narration.path, 'Narration');
 
   const actionSource = sceneTimings.map(timing => {
+    if (timing.scene.character || (spec.brand.presentation === 'character' && !timing.scene.authorPosterAssetId)) {
+      if (spec.brand.presentation !== 'character' || spec.brand.visualStyle !== 'sketch-v1' || timing.scene.action?.primitive !== 'character-explain') throw new Error('Character scenes require explicit character presentation, sketch-v1 and character-explain');
+      validateBilingualScene(timing.scene);
+      validatePerformance(timing.scene,spec.assets,Math.round((timing.end-timing.start)*spec.output.fps),spec.product);
+      validateCharacterStage(timing.scene.character!, Math.round((timing.end-timing.start)*spec.output.fps), timing.scene.assetRefs,spec.assets,timing.scene.onScreenText.length);
+    }
     if (timing.scene.authorPosterAssetId !== undefined) {
       const scene = timing.scene;
       const poster = assetMap.get(scene.authorPosterAssetId!);
@@ -316,14 +328,23 @@ export function composeVideo(input: VideoSpec, options: ComposeVideoOptions): st
       assets: spec.assets,
       backgroundAssetId: timing.scene.backgroundAssetId,
       workflow: timing.scene.workflow,
+      character: timing.scene.character,
     });
-    return compileSceneAction(action, { sceneId: timing.scene.id, sceneStartFrame: Math.round(timing.start * spec.output.fps), fps: spec.output.fps, workflow: timing.scene.workflow, visualStyle: spec.brand.visualStyle });
+    return compileSceneAction(action, { sceneId: timing.scene.id, sceneStartFrame: Math.round(timing.start * spec.output.fps), fps: spec.output.fps, workflow: timing.scene.workflow, character: timing.scene.character, visualStyle: spec.brand.visualStyle });
   }).join('\n');
 
   const sceneHtml = sceneTimings.map((timing, index) => renderScene(timing, index, sceneTimings, spec, assetMap, contacts)).join('\n');
   // Captions follow the audio clock independently of the scenes' crossfade opacity.
-  const captionHtml = cues.map(cue => `<p id="narration-caption-${cue.index}" class="caption narration-caption" data-text-role="body" data-scene-id="${html(cue.sceneId)}" data-caption-start="${preciseTime(cue.start)}" data-caption-end="${preciseTime(cue.end)}"${cue.start === 0 ? ' style="opacity:1"' : ''}>${html(cue.text)}</p>`).join('');
-  const initial = [`tl.set(${cssString('.scene')},{autoAlpha:0},0);`, `tl.set(${cssString(`#${sceneTimings[0]!.scene.id}`)},{autoAlpha:1},0);`];
+  // English follows each complete semantic scene's measured speech span. It is not fabricated word alignment.
+  const englishCues = sceneTimings.flatMap(({scene})=>{
+    const matching=cues.filter(cue=>cue.sceneId===scene.id);
+    if (!scene.bilingual?.subtitle || !matching.length) return [];
+    return [{id:`english-caption-${scene.id}`,sceneId:scene.id,text:scene.bilingual.subtitle,start:matching[0]!.start,end:matching.at(-1)!.end}];
+  });
+  const captionHtml = cues.map(cue => `<p id="narration-caption-${cue.index}" class="caption narration-caption" data-text-role="body" data-scene-id="${html(cue.sceneId)}" data-caption-start="${preciseTime(cue.start)}" data-caption-end="${preciseTime(cue.end)}"${cue.start === 0 ? ' style="opacity:1"' : ''}>${html(cue.text)}</p>`).join('')
+    + englishCues.map(cue=>`<p id="${html(cue.id)}" class="caption english-caption" lang="en" data-scene-id="${html(cue.sceneId)}" data-caption-language="en" data-caption-start="${preciseTime(cue.start)}" data-caption-end="${preciseTime(cue.end)}">${html(cue.text)}</p>`).join('');
+  const firstSceneId=sceneTimings[0]!.scene.id;
+  const initial = [`tl.set(${cssString(spec.brand.presentation==='character'?`.scene:not(#${firstSceneId})`:'.scene')},{autoAlpha:0},0);`, `tl.set(${cssString(`#${firstSceneId}`)},{autoAlpha:1},0);`];
   for (let index = 1; index < sceneTimings.length; index++) {
     const previous = sceneTimings[index - 1]!;
     const current = sceneTimings[index]!;
@@ -331,9 +352,9 @@ export function composeVideo(input: VideoSpec, options: ComposeVideoOptions): st
     initial.push(`tl.to(${cssString(`#${previous.scene.id}`)},{autoAlpha:0,duration:${finite(duration)},ease:"sine.inOut"},${finite(current.start)});`);
     initial.push(`tl.fromTo(${cssString(`#${current.scene.id}`)},{autoAlpha:0},{autoAlpha:1,duration:${finite(duration)},ease:"sine.inOut",immediateRender:false},${finite(current.start)});`);
   }
-  const captionSource = cues.flatMap(cue => [
-    `tl.set(${cssString(`#narration-caption-${cue.index}`)},{autoAlpha:1},${preciseTime(cue.start)});`,
-    `tl.set(${cssString(`#narration-caption-${cue.index}`)},{autoAlpha:0},${preciseTime(cue.end)});`,
+  const captionSource = [...cues.map(cue=>({...cue,elementId:`narration-caption-${cue.index}`})),...englishCues.map(cue=>({...cue,elementId:cue.id}))].flatMap(cue => [
+    `tl.set(${cssString(`#${cue.elementId}`)},{autoAlpha:1},${preciseTime(cue.start)});`,
+    `tl.set(${cssString(`#${cue.elementId}`)},{autoAlpha:0},${preciseTime(cue.end)});`,
   ]).join('\n');
   const narrationAudio = options.narration
     ? `<audio id="narration" class="clip" src="${html(localPath(options.narration.path, 'Narration'))}" data-start="0" data-duration="${preciseTime(options.narration.durationSec ?? totalDuration)}" data-track-index="1000" data-volume="1"></audio>`
@@ -346,5 +367,5 @@ export function composeVideo(input: VideoSpec, options: ComposeVideoOptions): st
   const orientation = spec.output.height > spec.output.width ? 'portrait' : 'landscape';
   const presentation = (spec.brand.presentation === 'workflow' ? ' presentation-workflow' : '') + (spec.brand.visualStyle ? ` ${spec.brand.visualStyle}` : '');
   const narrationCues = JSON.stringify(cues.map(({ sceneId, text, start, end }) => ({ sceneId, text, start, end }))).replaceAll('<', '\\u003c');
-  return `<!DOCTYPE html><html lang="${html(spec.output.locale)}"><head><meta charset="utf-8"><title>${html(spec.product.name)} · 产品介绍</title><style>${renderCss(spec, colors, options)}${editorialCss(spec, colors)}</style></head><body><div id="composition" class="composition ${orientation}${presentation}" data-composition-id="main" data-start="0" data-duration="${preciseTime(totalDuration)}" data-width="${spec.output.width}" data-height="${spec.output.height}">${sceneHtml}${captionHtml}${narrationAudio}${musicAudio}</div><script src="${html(localPath(options.gsapPath, 'GSAP'))}"></script><script>const NARRATION_CUES=${narrationCues};window.NARRATION_CUES=NARRATION_CUES;const tl=gsap.timeline({paused:true});${initial.join('')}${actionSource}${captionSource}tl.set("#composition",{visibility:"visible"},${preciseTime(totalFrames / spec.output.fps)});window.__timelines={main:tl};</script></body></html>\n`;
+  return `<!DOCTYPE html><html lang="${html(spec.output.locale)}"><head><meta charset="utf-8"><title>${html(spec.product.name)} · 产品介绍</title><style>${renderCss(spec, colors, options)}${editorialCss(spec, colors)}${spec.brand.presentation === 'character' ? characterCss : ''}${spec.scenes.some(scene=>scene.character?.performance) ? performanceCss : ''}</style></head><body><div id="composition" class="composition ${orientation}${presentation}" data-composition-id="main" data-start="0" data-duration="${preciseTime(totalDuration)}" data-width="${spec.output.width}" data-height="${spec.output.height}">${sceneHtml}${captionHtml}${narrationAudio}${musicAudio}</div><script src="${html(localPath(options.gsapPath, 'GSAP'))}"></script><script>const NARRATION_CUES=${narrationCues};window.NARRATION_CUES=NARRATION_CUES;const tl=gsap.timeline({paused:true});${initial.join('')}${actionSource}${captionSource}tl.set("#composition",{visibility:"visible"},${preciseTime(totalFrames / spec.output.fps)});window.__timelines={main:tl};</script></body></html>\n`;
 }

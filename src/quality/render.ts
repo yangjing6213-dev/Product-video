@@ -7,6 +7,8 @@ import { resolveProjectAsset } from '../assets/library.ts';
 import { resumeCreativePlan } from './plan.ts';
 import { assertCopyApproved } from './copy.ts';
 import { inspectCompositionAudio } from './audio.ts';
+import { assertCharacterReview } from './character-review.ts';
+import { validateSpec } from '../contracts.ts';
 
 export async function renderQuality(root: string, project: string, name = 'review', resume = false): Promise<string> {
   if (!/^[a-z0-9][a-z0-9-]{0,79}$/.test(name)) throw new Error('Use a safe new output name');
@@ -16,6 +18,19 @@ export async function renderQuality(root: string, project: string, name = 'revie
   if (!entry || digest(await readFile(index)) !== entry.sha256) throw new Error('Composition differs from frozen plan; author a new variant');
   const source = await readFile(index, 'utf8');
   if (/Math\.random\s*\(|Date\.now\s*\(|repeat\s*:\s*-1|https?:\/\/|file:\/\/|[A-Za-z]:[\\/]/.test(source)) throw new Error('Quality composition must use deterministic, local relative resources');
+  const verifyCharacters = async () => {
+    const file = await resolveProjectAsset(project, 'video-spec.json', true);
+    if (!await exists(file)) {
+      if (source.includes('data-performance-stage')) throw new Error('Character performance render requires its reviewed video specification');
+      return;
+    }
+    const bytes = await readFile(file), spec = validateSpec(JSON.parse(bytes.toString('utf8')));
+    const declared = plan.sources.find(item => item.source === 'runtime:video-spec.json');
+    if (declared && digest(bytes) !== declared.sha256) throw new Error('Character render specification differs from its frozen plan');
+    if (source.includes('data-performance-stage') && !spec.scenes.some(scene => scene.character?.performance)) throw new Error('Character stage cannot bypass review by removing its performance contract');
+    await assertCharacterReview(root, project, spec);
+  };
+  await verifyCharacters();
   const projectRelative = path.relative(root, project).replaceAll('\\', '/');
   const video = await resolveProjectAsset(root, `${projectRelative}/renders/${name}.mp4`, true);
   const reportPath = await resolveProjectAsset(root, `${projectRelative}/reports/quality-render-${name}.json`, true);
@@ -30,6 +45,7 @@ export async function renderQuality(root: string, project: string, name = 'revie
   if (!plan.copy) throw new Error('Copy approval required before generation: this plan has no frozen copy binding');
   await assertCopyApproved(root, project, { projectId: plan.projectId, productId: plan.productId, copySha256: plan.copy.sha256 });
   const verifyCurrentInputs = async () => {
+    await verifyCharacters();
     const current = await resumeCreativePlan(root, project);
     if (current.resolvedPlanSha256 !== plan.resolvedPlanSha256) throw new Error('Frozen plan changed during rendering');
     await assertCopyApproved(root, project, { projectId: plan.projectId, productId: plan.productId, copySha256: plan.copy!.sha256 });

@@ -6,7 +6,7 @@ import type { ProductInput, VideoSpec } from '../contracts.ts';
 import { resolveProjectAsset, writeExclusiveSnapshot } from '../assets/library.ts';
 import { composeVideo } from '../quality/composition.ts';
 import { assertVideoSpecCopyApproved } from '../quality/copy.ts';
-import { ACTIVE_GENERATOR_POLICY, checkGeneratorSpec, isActiveGeneratorPolicy, trustedGeneratorPolicy, type GeneratorPolicy } from '../quality/policy.ts';
+import { checkGeneratorSpec, isActiveGeneratorPolicy, trustedGeneratorPolicy, type GeneratorPolicy } from '../quality/policy.ts';
 import { assessAcceptance, freezeCreativePlan, resumeCreativePlan, type CreativePlan } from '../quality/plan.ts';
 import { validateSceneAction } from '../quality/motion.ts';
 import { assertNarrationProfile, validateVoiceProfile } from '../quality/voice-profile.ts';
@@ -22,6 +22,8 @@ import {
 } from '../qa/narration.ts';
 import { verifyReleaseEvidence } from '../quality/readiness.ts';
 import { inputFor, specFor, verifyProjectBrand } from './project.ts';
+import { validateCharacterSelection, validateCharacterCopy } from '../quality/character.ts';
+import { assertCharacterReview, characterReviewEvidenceInputs } from '../quality/character-review.ts';
 import { digest, exists, atomicJson } from './stage-state.ts';
 import { REPO, command, recordCommand, ensureSuccess } from './tools.ts';
 import { narrationEvidenceContext, snapshotVoiceReuse, voiceReuseEvidenceInputs } from './voice-reuse.ts';
@@ -33,6 +35,8 @@ export function productInputFromSpec(spec: VideoSpec): ProductInput {
 }
 
 export function validateGeneratorActions(spec: VideoSpec, cueIds: string[] = []): void {
+  validateCharacterSelection(spec);
+  validateCharacterCopy(spec);
   if (!spec.generatorPolicy) throw new Error('Common compose requires a current task; preserve historical compositions unchanged');
   const failures = checkGeneratorSpec(spec).filter(check => check.status === 'FAIL');
   if (failures.length) throw new Error(failures.map(check => `${check.id}: ${check.message}`).join('\n'));
@@ -43,6 +47,7 @@ export function validateGeneratorActions(spec: VideoSpec, cueIds: string[] = [])
       sceneDurationFrames: Math.round(((scene.actualEndSec ?? scene.plannedDurationSec) - (scene.actualStartSec ?? 0)) * spec.output.fps),
       sceneAssetRefs: scene.assetRefs, assets: spec.assets, cueIds,
       backgroundAssetId: scene.backgroundAssetId, workflow: scene.workflow,
+      character: scene.character,
     });
     subjectAction ||= scene.action.primitive !== 'reading-hold';
   }
@@ -166,6 +171,8 @@ async function reuseCurrentVoice(project: string, spec: VideoSpec, copySha256: s
 /** Explicit local speech entry; no provider discovery, paid calls or automatic replacement voice. */
 export async function synthesizeProjectVoice(project: string, reuseFrom?: string): Promise<string> {
   const root = path.resolve(project, '../..'), spec = await specFor(project);
+  await assertCharacterReview(root, project, spec);
+  if (spec.brand.presentation === 'character') await verifyProjectBrand(project);
   if (root !== path.resolve(REPO)) throw new Error('Speech runtime belongs to this complete local repository; use supplied measured audio for external test roots');
   if (!isActiveGeneratorPolicy(spec.generatorPolicy)) throw new Error('Explicit voice generation requires the current task policy');
   if (spec.audio.narrationMode !== 'external-audio' || spec.assets.find(asset => asset.id === spec.audio.externalAudioAssetId)?.path !== 'assets/narration.wav') throw new Error('Declare the generated narration asset at assets/narration.wav as external-audio before voice generation');
@@ -192,7 +199,7 @@ export async function synthesizeProjectVoice(project: string, reuseFrom?: string
   if (await reuseCurrentVoice(project, spec, approvedCopy.copySha256)) return path.join(project, 'reports/tts-generation.json');
   const relative = (file: string) => path.relative(root, path.join(project, file)).replaceAll('\\', '/');
   const qwen = profile.provider === 'qwen3-tts';
-  const result = await command(path.join(root, qwen ? '.tools/qwen3-tts-venv/Scripts/python.exe' : '.tools/tts-venv/Scripts/python.exe'), ['-X', 'utf8', path.join(root, qwen ? 'scripts/synthesize-qwen3.py' : 'scripts/synthesize-zh.py'), '--semantic-scenes', '--voice-profile', relative(profileFile), '--pronunciation', relative(pronunciationFile), '--context-hash', ACTIVE_GENERATOR_POLICY.rulesSha256, spec.projectId], { cwd: root, timeoutMs: qwen ? 1_800_000 : 600_000 });
+  const result = await command(path.join(root, qwen ? '.tools/qwen3-tts-venv/Scripts/python.exe' : '.tools/tts-venv/Scripts/python.exe'), ['-X', 'utf8', path.join(root, qwen ? 'scripts/synthesize-qwen3.py' : 'scripts/synthesize-zh.py'), '--semantic-scenes', '--voice-profile', relative(profileFile), '--pronunciation', relative(pronunciationFile), '--context-hash', spec.generatorPolicy!.rulesSha256, spec.projectId], { cwd: root, timeoutMs: qwen ? 1_800_000 : 600_000 });
   await recordCommand(project, 'current-local-voice', result); ensureSuccess(result, 'Explicit local Mandarin voice');
   if (qwen && !await reuseCurrentVoice(project, await specFor(project), approvedCopy.copySha256)) throw new Error('Qwen generation did not produce verified narration outputs');
   return path.join(project, 'reports/tts-generation.json');
@@ -209,8 +216,9 @@ async function snapshot(file: string, bytes: string | Buffer): Promise<void> {
 
 /** The normal CLI consumes authored structured actions; it does not branch on product names. */
 export async function composeProject(project: string): Promise<string> {
-  await verifyProjectBrand(project);
   const root = path.resolve(project, '../..'), spec = await specFor(project);
+  await assertCharacterReview(root, project, spec);
+  await verifyProjectBrand(project);
   if (!isDeepStrictEqual(productInputFromSpec(spec), await inputFor(project))) throw new Error('Creative specification differs from the frozen input');
   if (await exists(path.join(project, 'resolved-creative-plan.json'))) {
     await assertGeneratorSnapshot(project);
@@ -247,6 +255,8 @@ export async function composeProject(project: string): Promise<string> {
 /** Freeze the normal generator's actual input, code entry, media and copy using the existing plan store. */
 export async function freezeGeneratorProject(project: string): Promise<void> {
   const root = path.resolve(project, '../..'), spec = await specFor(project);
+  await assertCharacterReview(root, project, spec);
+  if (spec.brand.presentation === 'character') await verifyProjectBrand(project);
   if (!spec.generatorPolicy) return;
   if (await exists(path.join(project, 'resolved-creative-plan.json'))) { await assertGeneratorSnapshot(project); return; }
   validateGeneratorActions(spec, await projectCueIds(project));
@@ -262,11 +272,13 @@ export async function freezeGeneratorProject(project: string): Promise<void> {
     'reports/asr-alignment.json', 'reports/asr-raw.json', 'reports/asr-command.json', 'reports/asr-arguments.txt',
     'reports/qwen-runtime-config.json', 'reports/qwen-model-files.json', 'reports/qwen-authorization.json', 'reports/qwen-synthesis-runner.py']) if (await exists(path.join(project, file))) support.push(file);
   support.push(...(await voiceReuseEvidenceInputs(project, true)).map(file => path.relative(project, file).replaceAll('\\', '/')));
+  support.push(...(await characterReviewEvidenceInputs(root, project, spec)).map(file => path.relative(project, file).replaceAll('\\', '/')));
   for (const file of [...new Set(['input/product-input.json', 'video-spec.json', 'index.html', 'DESIGN.md', 'SCRIPT.md', 'STORYBOARD.md', textFile,
     'assets/vendor/gsap.min.js', ...spec.assets.map(asset => asset.path), ...support])]) {
     sources.push({ source: `runtime:${file}`, path: relative(file), sha256: digest(await readFile(path.join(project, file))) });
   }
   sources.push({ ...sources.find(source => source.source === 'runtime:index.html')!, source: 'composition-entry' });
+  if (spec.scenes.some(scene => scene.character?.performance)) sources.push({ source: 'character-renderer', path: 'src/quality/performance.ts', sha256: digest(await readFile(await resolveProjectAsset(root, 'src/quality/performance.ts'))) });
   const audio = spec.assets.find(asset => asset.id === spec.audio.externalAudioAssetId);
   const narration: CreativePlan['narration'] = { status: 'PENDING_REVIEW', provider: spec.audio.voiceProfile?.provider ?? 'none', modelId: spec.audio.voiceProfile?.modelId ?? 'none', voiceId: spec.audio.voiceProfile?.voiceId ?? 'none',
     textHash: digest(copy.narration.join('')), pronunciationMapHash: digest(JSON.stringify(spec.audio.pronunciationMap ?? {})) };
@@ -289,10 +301,12 @@ export async function freezeGeneratorProject(project: string): Promise<void> {
 }
 
 export async function assertGeneratorSnapshot(project: string): Promise<GeneratorPolicy> {
-  const root = path.resolve(project, '../..'), plan = await resumeCreativePlan(root, project);
+  const root = path.resolve(project, '../..'), spec = await specFor(project);
+  await assertCharacterReview(root, project, spec);
+  const plan = await resumeCreativePlan(root, project);
   const policy = trustedGeneratorPolicy(plan.generatorPolicy);
   if (!policy) throw new Error('Frozen generator policy is unknown or changed');
-  const spec = await specFor(project);
+  if (spec.brand.presentation === 'character') await verifyProjectBrand(project);
   if (!isDeepStrictEqual(spec.generatorPolicy, policy)) throw new Error('Video specification policy differs from its trusted frozen plan');
   await assertVideoSpecCopyApproved(root, project, spec);
   await voiceReuseEvidenceInputs(project);

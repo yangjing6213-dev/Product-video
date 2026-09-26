@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
 import { validateQwenNarration, qwenCacheKey, whisperTokens, loadQwenEvidence, lexicalQwenText, type QwenEvidenceFiles } from '../../src/qa/qwen-narration.ts';
 import { validateVoiceProfile, voiceProfileHash, pronunciationMapHash, qwenReferenceControls, type QwenVoiceProfile } from '../../src/quality/voice-profile.ts';
 import { validateCurrentNarrationEvidence, validateNarrationCues } from '../../src/qa/narration.ts';
-import { ACTIVE_GENERATOR_POLICY } from '../../src/quality/policy.ts';
+import { ACTIVE_GENERATOR_POLICY, CHARACTER_GENERATOR_POLICY } from '../../src/quality/policy.ts';
 import { digest, hashFiles } from '../../src/pipeline/stage-state.ts';
 import { validVideoSpec } from '../fixtures/input.ts';
 
@@ -73,6 +73,18 @@ test('Qwen genuine token alignment passes normal cue and current-evidence valida
   const f = fixture();
   assert.doesNotThrow(() => validateNarrationCues(f.evidence, f.spec, h('c'), 1));
   assert.doesNotThrow(() => validateCurrentNarrationEvidence(f.evidence, f.spec, { generation: f.generation, qwenFiles: f.files, expectedCopySha256: h('e'), expectedScriptSha256: h('3') }));
+});
+
+test('character policy enforces the full Qwen evidence gate instead of silently skipping it',()=>{
+ const f=fixture();f.spec.generatorPolicy=structuredClone(CHARACTER_GENERATOR_POLICY);
+ const hash=CHARACTER_GENERATOR_POLICY.rulesSha256;
+ f.evidence.contextHash=hash;f.evidence.qualityRulesSha256=hash;
+ f.generation.synthesisIdentity.contextHash=hash;f.generation.cacheKey=qwenCacheKey(f.generation.synthesisIdentity);
+ assert.throws(()=>validateCurrentNarrationEvidence({},f.spec,{}));
+ const options={generation:f.generation,qwenFiles:f.files,expectedCopySha256:h('e'),expectedScriptSha256:h('3')};
+ assert.doesNotThrow(()=>validateCurrentNarrationEvidence(f.evidence,f.spec,options));
+ f.generation.sourceReceipt.audioSha256=h('9');
+ assert.throws(()=>validateCurrentNarrationEvidence(f.evidence,f.spec,options),/source receipt/);
 });
 
 test('Qwen source receipt binds the final audio, source mode and actual inference count', () => {

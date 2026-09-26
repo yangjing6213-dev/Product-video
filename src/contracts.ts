@@ -4,14 +4,20 @@ import type { GeneratorPolicy } from './quality/policy.ts';
 import type { VoiceProfile } from './quality/voice-profile.ts';
 import type { SceneAction } from './quality/motion.ts';
 import type { SceneWorkflow } from './quality/workflow.ts';
+import type { CharacterStage, CharacterPoses } from './quality/character.ts';
+import { validatePerformance, type CharacterRig } from './quality/performance.ts';
 import type { DeliveryMode, VoiceDirection } from './quality/voice-direction.ts';
 
 import { Ajv2020, type ValidateFunction } from 'ajv/dist/2020.js';
 
 export type AssetType = 'logo' | 'screenshot' | 'screen-recording' | 'image' | 'audio' | 'font';
 export type AssetLicense = 'owned' | 'authorized' | 'unknown';
+export type RenderMode = 'hyperframes' | 'remotion';
 
 export interface Asset {
+  characterRig?: CharacterRig;
+  characterPoses?: CharacterPoses;
+  characterColor?: 'monochrome' | 'original';
   width?: number;
   height?: number;
   fontFamily?: string;
@@ -51,8 +57,8 @@ export interface ProductDetails {
 }
 
 export interface BrandSpec {
-  presentation?: 'workflow';
-  visualStyle?: 'editorial-v1' | 'editorial-v2';
+  presentation?: 'workflow' | 'character';
+  visualStyle?: 'editorial-v1' | 'editorial-v2' | 'sketch-v1';
   logoAssetId: string;
   colors: string[];
   fontFamilies: string[];
@@ -88,6 +94,7 @@ export interface CaptionSpec {
 }
 
 export interface ProductInput {
+  renderMode?: RenderMode;
   generatorPolicy?: GeneratorPolicy;
   authorContacts?: { name: string; items: Array<{ label: string; value: string; url?: string }> };
   schemaVersion: '1.0';
@@ -102,7 +109,10 @@ export interface ProductInput {
 }
 
 export interface Scene {
+  character?: CharacterStage;
+  bilingual?: { onScreenText: string[]; subtitle: string };
   authorPosterAssetId?: string;
+  readingHoldAfterSpeechSec?: number;
   workflow?: SceneWorkflow;
   voiceDirection?: VoiceDirection;
   backgroundAssetId?: string;
@@ -169,6 +179,8 @@ function readSchema(fileName: string): object {
 }
 
 const ajv = new Ajv2020({ allErrors: true, strict: true });
+ajv.addSchema(readSchema('performance.schema.json'));
+ajv.addSchema(readSchema('character-stage.schema.json'));
 const productInputSchema = readSchema('product-input.schema.json');
 ajv.addSchema(productInputSchema);
 
@@ -219,6 +231,7 @@ export function validateSpec(value: unknown): VideoSpec {
   const errors: string[] = [];
   const sceneIds = new Set<string>();
   for (const [index, scene] of value.scenes.entries()) {
+    if(scene.character?.performance) validatePerformance(scene,value.assets,Math.round((scene.actualEndSec!==null&&scene.actualStartSec!==null?scene.actualEndSec-scene.actualStartSec:scene.plannedDurationSec)*value.output.fps),value.product);
     if (sceneIds.has(scene.id)) {
       errors.push(`scene IDs must be unique; duplicate ${scene.id}`);
     }

@@ -7,6 +7,8 @@ import { atomicJson, exists, digest, safeProjectId } from './stage-state.ts';
 import { REPO } from './tools.ts';
 import { freezeBrandAssets, verifyFrozenBrandAssets, resolveProjectAsset } from '../assets/library.ts';
 import { isActiveGeneratorPolicy, resolveGeneratorInput, trustedGeneratorPolicy } from '../quality/policy.ts';
+import { validateCharacterSelection } from '../quality/character.ts';
+import { parseRenderer, assertRendererMatch, type RendererId } from './renderer.ts';
 
 export const projectPath = (id: string, root = REPO) => path.join(root, 'projects', safeProjectId(id));
 export async function inputFor(project: string): Promise<ProductInput> { return validateInput(JSON.parse(await readFile(path.join(project, 'input/product-input.json'), 'utf8'))); }
@@ -44,11 +46,13 @@ async function planAssets(input: ProductInput, inputFile: string, project: strin
   return planned;
 }
 
-export async function initialize(inputFile: string, root = REPO): Promise<string> {
+export async function initialize(inputFile: string, root = REPO, requestedRenderer?: RendererId): Promise<string> {
   const submitted = JSON.parse(await readFile(inputFile, 'utf8'));
+  const renderer = requestedRenderer === undefined ? undefined : parseRenderer(requestedRenderer);
   const existingPath = projectPath(submitted?.projectId, root);
   const existingInput = await exists(path.join(existingPath, 'input/product-input.json'))
     ? await inputFor(existingPath) : null;
+  if (existingInput && renderer !== undefined) assertRendererMatch(existingInput, renderer);
   if (existingInput?.generatorPolicy && existingInput.generatorPolicy.authorEnding !== 'brand-signoff'
       && !trustedGeneratorPolicy(existingInput.generatorPolicy)) {
     throw new Error('Existing generator policy is unknown or modified');
@@ -58,9 +62,11 @@ export async function initialize(inputFile: string, root = REPO): Promise<string
     const contactPath = await resolveProjectAsset(root, 'assets/brand/enhe/author/contact-profile.json', true);
     if (await exists(contactPath)) contacts = JSON.parse(await readFile(contactPath, 'utf8'));
   }
-  const input = validateInput(!existingInput || isActiveGeneratorPolicy(existingInput.generatorPolicy)
+  const inputValue = !existingInput || isActiveGeneratorPolicy(existingInput.generatorPolicy)
     ? resolveGeneratorInput(submitted, contacts)
-    : submitted);
+    : submitted;
+  const input = validateInput(renderer === undefined ? inputValue : { ...(inputValue as Record<string, unknown>), renderMode: renderer });
+  validateCharacterSelection(input);
   // A newly introduced visual default must not upgrade an already frozen active-policy task.
   if (existingInput && !existingInput.brand.visualStyle && !submitted.brand?.visualStyle) delete input.brand.visualStyle;
   const project = projectPath(input.projectId, root);
@@ -109,9 +115,15 @@ export async function initialize(inputFile: string, root = REPO): Promise<string
 }
 export async function verifyProjectBrand(project: string): Promise<void> {
   const input = await inputFor(project);
+  const actors = validateCharacterSelection(input);
   if (!input.brandLibrary) return; // Historical jobs retain their original asset contract.
   const frozen = await verifyFrozenBrandAssets(path.resolve(project, '../..'), project);
   if (JSON.stringify(frozen.selection) !== JSON.stringify(input.brandLibrary)) throw new Error('Task brand selection differs from its frozen manifest');
+  for (const actor of actors) {
+    const selected=frozen.assets.find(asset=>asset.assetId===actor.id);
+    const file=await resolveProjectAsset(project, actor.path);
+    if (!selected || digest(await readFile(file)) !== selected.sha256) throw new Error(`Character actor bytes differ from the approved frozen library: ${actor.id}`);
+  }
 }
 export async function manifest(project: string, input: ProductInput): Promise<string> {
   const assets = [];

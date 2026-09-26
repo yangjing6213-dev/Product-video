@@ -332,7 +332,7 @@ export async function browserQa(project: string, spec: VideoSpec): Promise<Check
             if((/hidden|clip|auto|scroll/.test(style.overflowX) && (box.x<clip.x-2 || box.x+box.width>clip.x+clip.width+2))
               || (/hidden|clip|auto|scroll/.test(style.overflowY) && (box.y<clip.y-2 || box.y+box.height>clip.y+clip.height+2))) ancestorClipped=true;
           }
-          return { text:el.innerText, box, ancestorClipped, overflow:el.scrollWidth > el.clientWidth + 2 || el.scrollHeight > el.clientHeight + 2, fontSize:parseFloat(getComputedStyle(el).fontSize), role, isCaption:el.matches('.caption,.narration-caption'), fontSelector:`[data-epvs-font-audit="${sceneId}-${index}"]` };
+          return { text:el.innerText, box, ancestorClipped, overflow:el.scrollWidth > el.clientWidth + 2 || el.scrollHeight > el.clientHeight + 2, fontSize:parseFloat(getComputedStyle(el).fontSize), role, isCaption:el.matches('.caption,.narration-caption'), isEnglish:el.lang==='en', fontSelector:`[data-epvs-font-audit="${sceneId}-${index}"]` };
         });
         // Resolve authored CSS colors after cascade/variables. Asset pixels retain their own brand colors.
         const canvas = document.createElement('canvas'); canvas.width = canvas.height = 1;
@@ -432,7 +432,7 @@ export async function browserQa(project: string, spec: VideoSpec): Promise<Check
         }
         const alignment=headerLogo&&title?{logoLeft:rect(headerLogo).x,titleLeft:rect(title).x,opticalLeft,objectPosition:getComputedStyle(headerLogo).objectPosition}:null;
         return { captions,logos,text,images,overlaps,paletteViolations,captionBackgrounds,ending,poster,alignment };
-      }, { sceneId: scene.id, time: scene.heroFrameSec ?? (scene.actualStartSec ?? 0) + 2, logoPaths:spec.assets.filter(asset => asset.type === 'logo').map(asset => asset.path), palette:spec.brand.colors,
+      }, { sceneId: scene.id, time: scene.heroFrameSec ?? (scene.actualStartSec ?? 0) + 2, logoPaths:spec.assets.filter(asset => asset.type === 'logo').map(asset => asset.path), palette:scene.authorPosterAssetId && spec.brand.visualStyle==='sketch-v1' ? [...spec.brand.colors,'#071827'] : spec.brand.colors,
         posterAssetId:scene.authorPosterAssetId ?? null, posterPath:spec.assets.find(asset => asset.id === scene.authorPosterAssetId)?.path ?? null });
       const actualFonts = await Promise.all(measured.text.map(async item => ({ text:item.text, usedFonts:await platformFonts(item.fontSelector) })));
       measurements.push({ sceneId: scene.id, ...measured, actualFonts });
@@ -502,7 +502,9 @@ export async function browserQa(project: string, spec: VideoSpec): Promise<Check
       if (spec.generatorPolicy) {
         add('caption-background', measured.captionBackgrounds.every(item => item.clear), 'Actual caption elements and their wrappers have no background, gradient or box shadow. Text shadow is allowed.');
         const smallerCaptions=spec.brand.visualStyle==='editorial-v2';
-        add('small-player-type', measured.text.every(item => item.fontSize >= (smallerCaptions&&item.isCaption?30.8:item.role === 'title' ? 78 : item.role === 'label' ? 32 : 42)), 'Body >=42px, labels >=32px, titles >=78px. Only editorial-v2 subtitles use the user-requested 30.8px (70% of 44px); actual small-player readability still requires review.');
+        const character=spec.brand.presentation==='character'&&spec.brand.visualStyle==='sketch-v1';
+        add('small-player-type', measured.text.every(item => item.fontSize >= (character ? item.isEnglish?25:item.isCaption?30.8:item.role==='title'?64:item.role==='label'?24:36 : smallerCaptions&&item.isCaption?30.8:item.role === 'title' ? 78 : item.role === 'label' ? 32 : 42)), character ? 'Bilingual character layout: titles >=64px, Chinese body >=36px, English >=25px, step labels >=24px, Chinese captions >=30.8px; human small-player reading review remains required.' : 'Body >=42px, labels >=32px, titles >=78px. Only editorial-v2 subtitles use the user-requested 30.8px (70% of 44px); actual small-player readability still requires review.');
+        if(character&&!posterMode) add('bilingual-caption-safe-area', measured.captions.every(c=>checkSafeArea(c.box,spec.output,spec.captions.safeAreaPercent)), 'Both language caption boxes stay inside the configured safe area.');
         if(smallerCaptions&&!posterMode){
           add('caption-scale', measured.text.filter(item=>item.isCaption).every(item=>Math.abs(item.fontSize-30.8)<.05), 'Only subtitle text is scaled to exactly 70% of the previous 44px.');
           const alignment=measured.alignment;

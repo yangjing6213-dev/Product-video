@@ -1,18 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Page } from 'puppeteer-core';
 import type { CheckResult, VideoSpec } from '../contracts.ts';
+import { browserPerformanceQa } from './performance.ts';
 
 /** Observe real asset elements across the authored action; labels and animation counts cannot satisfy it. */
 export async function browserMotionQa(page: Page, spec: VideoSpec): Promise<{ checks: CheckResult[]; samples: unknown[] }> {
-  const checks: CheckResult[] = [], samples: unknown[] = [];
+  const { checks, samples } = await browserPerformanceQa(page, spec);
   if (!spec.generatorPolicy) return { checks, samples };
   for (const scene of spec.scenes) {
+    if (scene.character?.performance) continue;
     const action = scene.action;
     if (!action) { checks.push({ id: `motion.${scene.id}.action`, status: 'FAIL', message: 'Structured subject action missing' }); continue; }
-    const assetIds = action.primitive === 'layer-assemble'
+    const assetIds = action.primitive === 'character-explain' ? (scene.character?.actors ?? []).map(actor=>actor.assetId) : action.primitive === 'layer-assemble'
       ? (spec.assets.find(asset => asset.id === action.subject.assetId)?.layers ?? []).filter(layer => action.subject.layerIds?.includes(layer.id)).map(layer => layer.assetId)
       : action.relatedAssetIds ?? [action.subject.assetId];
-    const read = async (frame: number) => page.evaluate(({ sceneId, ids, time }) => {
+    const read = async (frame: number) => page.evaluate(({ sceneId, ids, time, character }) => {
       const win = window as Window & { __timelines?: Record<string, { seek(time: number): void }> };
       if (!win.__timelines?.main) return null;
       for (const item of document.querySelectorAll<HTMLElement>('.scene')) item.style.display = '';
@@ -21,7 +23,20 @@ export async function browserMotionQa(page: Page, spec: VideoSpec): Promise<{ ch
       if (!scope) return null;
       return ids.map(id => {
         const element = [...scope.querySelectorAll<HTMLElement>('[data-asset-id]')].find(item => item.dataset.assetId === id);
-        if (!element || !(element instanceof HTMLImageElement || element instanceof HTMLVideoElement)) return null;
+        const atlas = character && element?.matches('.character-actor[data-character-actor]') ? [...element.querySelectorAll<HTMLImageElement>('.character-pose img')] : [];
+        if (!element || !(element instanceof HTMLImageElement || element instanceof HTMLVideoElement || atlas.length)) return null;
+        const poses=atlas.map(image=>{
+          const box=image.getBoundingClientRect(),region={left:Math.max(0,box.left),top:Math.max(0,box.top),right:Math.min(innerWidth,box.right),bottom:Math.min(innerHeight,box.bottom)};
+          let shown=box.width>0&&box.height>0,alpha=1;
+          for(let current:HTMLElement|null=image;current&&current!==element;current=current.parentElement){
+            const css=getComputedStyle(current);alpha*=Number(css.opacity);
+            shown&&=css.display!=='none'&&css.visibility!=='hidden'&&css.visibility!=='collapse';
+            if(current!==image&&/hidden|clip|scroll|auto/.test(`${css.overflowX} ${css.overflowY}`)){
+              const clip=current.getBoundingClientRect();region.left=Math.max(region.left,clip.left);region.right=Math.min(region.right,clip.right);region.top=Math.max(region.top,clip.top);region.bottom=Math.min(region.bottom,clip.bottom);
+            }
+          }
+          return {src:image.getAttribute('src'),opacity:getComputedStyle(image.parentElement!).opacity,transform:getComputedStyle(image.parentElement!).transform,visible:shown&&alpha>.02&&region.right>region.left+1&&region.bottom>region.top+1};
+        });
         const style = getComputedStyle(element), box = element.getBoundingClientRect();
         let opacity = 1, visible = true;
         const region = { left: Math.max(0, box.left), top: Math.max(0, box.top), right: Math.min(innerWidth, box.right), bottom: Math.min(innerHeight, box.bottom) };
@@ -36,12 +51,14 @@ export async function browserMotionQa(page: Page, spec: VideoSpec): Promise<{ ch
           }
         }
         visible &&= opacity > 0.02 && region.right > region.left + 1 && region.bottom > region.top + 1;
-        return { id, src: element.getAttribute('src'), loaded: element instanceof HTMLImageElement ? element.complete && element.naturalWidth > 0 : element.readyState >= 1,
+        if(atlas.length) visible &&= poses.some(pose=>pose.visible);
+        return { id, src: atlas.length ? poses[0]!.src : element.getAttribute('src'), loaded: atlas.length ? atlas.every(image=>image.complete&&image.naturalWidth>0) && poses.every(pose=>pose.src===poses[0]!.src) : element instanceof HTMLImageElement ? element.complete && element.naturalWidth > 0 : (element as HTMLVideoElement).readyState >= 1,
+          poses,
           visible,
           transform: style.transform, clipPath: style.clipPath, opacity: style.opacity, visibility: style.visibility,
           x: Math.round(box.x * 100) / 100, y: Math.round(box.y * 100) / 100, width: Math.round(box.width * 100) / 100, height: Math.round(box.height * 100) / 100 };
       });
-    }, { sceneId: scene.id, ids: assetIds, time: (scene.actualStartSec ?? 0) + frame / spec.output.fps });
+    }, { sceneId: scene.id, ids: assetIds, time: (scene.actualStartSec ?? 0) + frame / spec.output.fps, character:spec.brand.presentation==='character'&&action.primitive==='character-explain' });
     const hold = action.primitive === 'reading-hold';
     const holdStart = Math.max(action.endFrame, Math.ceil(scene.transition.durationSec * spec.output.fps)) + 0.01;
     const holdEnd = action.endFrame + action.holdFrames - 0.01;
@@ -52,7 +69,7 @@ export async function browserMotionQa(page: Page, spec: VideoSpec): Promise<{ ch
       && assetIds.every(id => hold ? [middle, after].every(rows => rows?.some(row => row?.id === id && row.visible))
         : [before, middle, after].some(rows => rows?.some(row => row?.id === id && row.visible))));
     // A scene entrance changes ancestor visibility without moving a held subject.
-    const subjectState = (rows: typeof before) => rows?.map(row => row && { id: row.id, opacity: row.opacity, transform: row.transform, clipPath: row.clipPath, x: row.x, y: row.y, width: row.width, height: row.height });
+    const subjectState = (rows: typeof before) => rows?.map(row => row && { id: row.id, opacity: row.opacity, transform: row.transform, clipPath: row.clipPath, x: row.x, y: row.y, width: row.width, height: row.height, poses:row.poses });
     const changed = JSON.stringify(subjectState(before)) !== JSON.stringify(subjectState(after));
     const deterministic = JSON.stringify(before) === JSON.stringify(reverse);
     samples.push({ sceneId: scene.id, primitive: action.primitive, before, middle, after, reverse });

@@ -8,6 +8,11 @@ The currently verified platform is Windows x64. A fresh clone must have Node.js 
 npm ci
 ```
 
+如果选择可选的 `Codex + Remotion` 本地模式，`npm ci` 会安装锁定的 Remotion
+`4.0.529` 与 React `19.3.0`。该模式不需要云账号或系统级安装；首次本地渲染会
+在临时目录打包 React composition，并把视频写入任务的
+`renders/remotion/`。许可边界见 [REMOTION-LICENSE.md](../security/REMOTION-LICENSE.md)。
+
 ## Commands
 
 After repository-local npm dependencies exist, run:
@@ -40,6 +45,7 @@ The script refuses to overwrite an existing `.tools/environment.json` whose requ
 | FFmpeg `6.1.1` | `https://api.github.com/repos/eugeneware/ffmpeg-static/releases/assets/316528798` with `Accept: application/octet-stream` | gzip SHA-256 `8883a3dffbd0a16cf4ef95206ea05283f78908dbfb118f73c83f4951dcc06d77` | Exact version plus decompressed executable SHA-256 |
 | FFprobe `4.0.2` | pinned package `ffprobe-static@3.1.0` | npm lockfile | Exact version plus executable SHA-256 |
 | HyperFrames `0.8.33` | pinned npm dependency | npm lockfile | Exact CLI version plus `doctor --json` |
+| Remotion `4.0.529` | pinned npm dependencies, opt-in | npm lockfile | Local bundle and media render report |
 
 Chrome is extracted to `.tools/chrome/chrome-headless-shell-win64/chrome-headless-shell.exe`. FFmpeg is stored as `.tools/ffmpeg-6.1.1.exe`. FFprobe remains under `node_modules/ffprobe-static/bin/win32/x64/ffprobe.exe`. Downloads and executables remain ignored local artifacts.
 

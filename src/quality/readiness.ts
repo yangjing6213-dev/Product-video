@@ -6,6 +6,8 @@ import { validateQaReport, validateSpec } from '../contracts.ts';
 import { digest, exists, readState, type StageRecord } from '../pipeline/stage-state.ts';
 import { checkGeneratorSpec } from './policy.ts';
 import { assessAcceptance } from './plan.ts';
+import { REPO } from '../pipeline/tools.ts';
+import { rendererOutputPath, resolveRenderer } from '../pipeline/renderer.ts';
 
 export interface ReleaseEvidence {
   engineering: 'PASS' | 'FAIL' | 'NOT_RUN';
@@ -180,10 +182,15 @@ async function verifyApprovals(project: string, finalSha256: string): Promise<{ 
 
 /** Verify current release evidence without manufacturing user approval or re-running production. */
 export async function verifyReleaseEvidence(project: string): Promise<ReleaseEvidence> {
+  const specPath = path.join(project, 'video-spec.json');
+  const selectedRenderer = await exists(specPath)
+    ? resolveRenderer(JSON.parse(await readFile(specPath, 'utf8')) as Pick<VideoSpec, 'renderMode'>)
+    : 'hyperframes';
+  const finalVideoRelative = path.relative(project, rendererOutputPath(project, selectedRenderer, 'final')).replaceAll('\\', '/');
   const files = {
-    spec: path.join(project, 'video-spec.json'),
-    entry: path.join(project, 'index.html'),
-    video: path.join(project, 'renders/final.mp4'),
+    spec: specPath,
+    entry: selectedRenderer === 'hyperframes' ? path.join(project, 'index.html') : path.join(REPO, 'src/remotion/entry.tsx'),
+    video: path.join(project, finalVideoRelative),
     qa: path.join(project, 'reports/qa-report.json'),
     media: path.join(project, 'reports/high-media-report.json'),
     render: path.join(project, 'reports/render-high-report.json'),
@@ -229,7 +236,7 @@ export async function verifyReleaseEvidence(project: string): Promise<ReleaseEvi
   } catch (error) {
     return { engineering: 'FAIL', artifactAcceptance: 'NOT_RUN', issues: [...issues, `Final video is unreadable: ${error instanceof Error ? error.message : String(error)}`] };
   }
-  if (render.quality !== 'high' || render.exitCode !== 0 || render.output !== 'renders/final.mp4') issues.push('High render report does not identify a successful renders/final.mp4 output');
+  if (render.quality !== 'high' || render.exitCode !== 0 || render.output !== finalVideoRelative) issues.push(`High render report does not identify a successful ${finalVideoRelative} output`);
   if (render.videoSha256 !== finalSha256) issues.push('High render report video hash differs from the actual final video');
   if (render.specSha256 !== digest(await readFile(files.spec))) issues.push('High render report spec hash differs from the current video specification');
   if (render.entrySha256 !== digest(await readFile(files.entry))) issues.push('High render report entry hash differs from the current composition');
@@ -238,7 +245,7 @@ export async function verifyReleaseEvidence(project: string): Promise<ReleaseEvi
     const state = await readState(project);
     if (state.schemaVersion !== '1.0') issues.push('Current run-state schemaVersion is invalid');
     await verifyStageOutputs(project, 'final', state.stages.final,
-      ['renders/final.mp4', 'reports/high-media-report.json', 'reports/render-high-report.json'], issues);
+      [finalVideoRelative, 'reports/high-media-report.json', 'reports/render-high-report.json'], issues);
     await verifyStageOutputs(project, 'media', state.stages.media, ['reports/qa-report.json', 'reports/audio-binding.json'], issues);
   } catch (error) {
     issues.push(`Current run-state is invalid: ${error instanceof Error ? error.message : String(error)}`);

@@ -6,6 +6,7 @@ import test from 'node:test';
 import type { VideoSpec } from '../../src/contracts.ts';
 import {
   checkNarrationComposition,
+  narrationTimelineEnd,
   validateCurrentNarrationEvidence,
   validateNarrationCues,
   validatePhraseTranscript,
@@ -42,6 +43,19 @@ function narrationSpec(): VideoSpec {
   for (const [index, scene] of spec.scenes.entries()) scene.voiceover = index === 0 ? '第一句。第二句。' : `第${index + 1}句。`;
   return spec;
 }
+
+test('explicit final reading hold preserves the measured speech end and rejects invalid holds',()=>{
+ const spec=narrationSpec(),last=spec.scenes.at(-1)!;
+ assert.equal(narrationTimelineEnd(spec),last.actualEndSec);
+ last.readingHoldAfterSpeechSec=2;
+ assert.equal(narrationTimelineEnd(spec),last.actualEndSec!-2);
+ for(const invalid of [-1,NaN,last.actualEndSec!-last.actualStartSec!]){
+  last.readingHoldAfterSpeechSec=invalid;assert.throws(()=>narrationTimelineEnd(spec),/reading hold/i);
+ }
+ delete last.readingHoldAfterSpeechSec;
+ spec.scenes[0]!.readingHoldAfterSpeechSec=2;
+ assert.throws(()=>narrationTimelineEnd(spec),/reading hold/i);
+});
 
 function cueEvidence(spec: VideoSpec): NarrationCues {
   return {

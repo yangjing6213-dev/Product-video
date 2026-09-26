@@ -6,13 +6,13 @@ Turn scattered product notes, screenshots and assets into a video that explains 
 
 [中文](README.md) · [See the example](#5-example) · [Installation](#6-installation) · [ENHE website](https://www.enhe-tech.com.cn/)
 
-![Product Video Studio English cover](docs/showcase/product-video-cover-en-v01.png)
+See [CHANGELOG.md](CHANGELOG.md) for update notes.
 
 ## 1. What is this repository?
 
 This is a local product-video tool designed to work with **Codex**. The current version is **0.1.0**.
 
-You provide the product information. Codex follows the repository's Skill to organize the content, write the script and plan the shots. After your approval, HyperFrames handles the animation and rendering, with narration, subtitles and quality checks as part of the workflow.
+You provide the product information. Codex follows the repository's Skill to organize the content, write the script and plan the shots. After your approval, choose **HyperFrames + GSAP** (default) or **Codex + Remotion** (optional local mode) for animation and rendering; both modes share the same copy approval, frozen assets, narration, subtitles and QA gates.
 
 It brings the story and the production steps together. You can review the copy, adjust the visuals and save an approved plan to continue working on later.
 
@@ -151,6 +151,16 @@ Once Codex has prepared the input, assets, storyboard and animation files, the p
 npm run video -- help
 ```
 
+Choose a renderer before generation: `HyperFrames + GSAP` is the compatible default, while `Codex + Remotion` is an optional local React timeline. New jobs can freeze the choice at initialization; historical inputs without `renderMode` resolve to HyperFrames:
+
+```powershell
+npm run video -- modes
+npm run video -- init --input product-input.json --renderer remotion
+npm run video -- run --project your-project-id --renderer remotion --resume
+```
+
+A resumed job cannot silently switch modes; create a new project variant when you need a different renderer. Both modes require copy approval first. Remotion outputs go to `projects/<projectId>/renders/remotion/` and do not overwrite existing HyperFrames videos.
+
 For a prepared task, continue with these commands, replacing `your-project-id` with its actual task ID:
 
 ```powershell
@@ -186,7 +196,7 @@ npm run video -- render --project your-project-id --quality high --resume
 2. **Choose the assets:** confirm brand, portrait and voice sources, and select a suitable new scene for the video.
 3. **Approve the content:** review the full narration, on-screen text, subtitles and storyboard.
 4. **Approve the visual and voice direction:** check the cover, author outro, key shots and narration.
-5. **Produce and render:** freeze the approved assets and create the video with HyperFrames.
+5. **Choose a mode and render:** freeze the approved assets, then use HyperFrames + GSAP (default) or Codex + Remotion (optional local mode).
 6. **Review the finished video:** check subtitles, layout, sound, duration and assets against the requirements.
 7. **Deliver and reuse:** keep the video, asset versions and reports. Resuming the same task must not randomly change its portrait, scene or voice.
 
@@ -219,7 +229,7 @@ The workflow also uses local directories such as `projects/`, `.tools/` and `.ca
 
 - **This is a local workflow, not a one-click cloud generator.** Codex creates the copy, storyboard and visuals according to the Skill; the CLI runs repeatable production steps.
 - **Approve the copy before generating a video.** Review the visuals, sound and asset rights before publishing.
-- **Paid APIs and cloud services are not enabled by default.** The default workflow does not use Remotion, ElevenLabs, Captions AI, cloud rendering, databases, a Job API or object storage.
+- **Paid APIs and cloud services are not enabled by default.** HyperFrames + GSAP is the default; Remotion runs only when explicitly selected and only on the local machine. Cloud rendering, databases, a Job API and object storage remain disabled. See the [local Remotion license boundary](docs/security/REMOTION-LICENSE.md).
 - **Public examples are not a free asset pack.** The code uses [Apache-2.0](LICENSE). Portraits, brands, voices and third-party content have separate rights, described in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 - **Keep private information out of public repositories.** Tokens, cookies, unredacted screenshots, voice references and private assets stay local.
 - **A new scene must preserve the approved style.** New videos use different real-world backgrounds; resumed tasks retain their original portrait, scene and frozen versions.

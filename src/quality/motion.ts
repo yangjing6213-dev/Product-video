@@ -6,6 +6,8 @@ import {
   type SceneWorkflow,
   type WorkflowAssetType,
 } from './workflow.ts';
+import type { Asset } from '../contracts.ts';
+import { compileCharacterStage, validateCharacterStage, type CharacterStage, type CharacterPoses } from './character.ts';
 
 export type ActionPrimitive =
   | 'focus-transfer'
@@ -14,6 +16,7 @@ export type ActionPrimitive =
   | 'before-after'
   | 'object-handoff'
   | 'reading-hold'
+  | 'character-explain'
   | 'workflow-progress';
 
 export type ActionDirection = 'left' | 'right' | 'up' | 'down';
@@ -28,6 +31,8 @@ export interface MotionAssetLayer {
 }
 
 export interface MotionAsset {
+  characterPoses?: CharacterPoses;
+  license?: Asset['license'];
   id: string;
   path: string;
   type?: WorkflowAssetType;
@@ -53,6 +58,7 @@ export interface SceneAction {
 }
 
 export interface SceneActionContext {
+  character?: CharacterStage;
   sceneId: string;
   sceneDurationFrames: number;
   sceneAssetRefs: readonly string[];
@@ -63,12 +69,13 @@ export interface SceneActionContext {
 }
 
 export interface CompileSceneActionContext {
+  character?: CharacterStage;
   sceneId: string;
   sceneStartFrame: number;
   fps: number;
   timelineName?: string;
   workflow?: SceneWorkflow;
-  visualStyle?: 'editorial-v1' | 'editorial-v2';
+  visualStyle?: 'editorial-v1' | 'editorial-v2' | 'sketch-v1';
 }
 
 export interface MotionReviewHint {
@@ -94,6 +101,7 @@ function validateFocus(focus: SceneAction['focus']): void {
 
 /** Validate executable action semantics against the real assets available to one scene. */
 export function validateSceneAction(action: SceneAction, context: SceneActionContext): SceneAction {
+  if (!['focus-transfer','layer-assemble','state-change','before-after','object-handoff','reading-hold','workflow-progress','character-explain'].includes(action?.primitive)) throw new Error('Unsupported scene action primitive');
   if (!action || !text(action.intent) || !text(action.beforeState) || !text(action.afterState)) throw new Error('Scene action requires intent, beforeState and afterState');
   if (!ID.test(action.subject?.assetId ?? '')) throw new Error('Scene action requires a safe subject asset ID');
   assertFrame(action.startFrame, 'Action startFrame');
@@ -111,6 +119,11 @@ export function validateSceneAction(action: SceneAction, context: SceneActionCon
     return asset;
   };
   const subject = requireSceneAsset(action.subject.assetId);
+  if (action.primitive === 'character-explain') {
+    if (!context.character || context.workflow) throw new Error('character-explain requires its own character stage');
+    validateCharacterStage(context.character, context.sceneDurationFrames, context.sceneAssetRefs, context.assets as readonly Asset[]);
+    if (!context.character.actors.some(actor=>actor.assetId===subject.id) || context.character.beats.some(beat=>beat.frame<action.startFrame||beat.frame+18>action.endFrame)) throw new Error('Character beats must stay inside the declared subject action');
+  }
   if (action.syncCueId && (!ID.test(action.syncCueId) || !context.cueIds?.includes(action.syncCueId))) throw new Error('Scene action syncCueId must reference a real narration cue');
 
   if (action.primitive === 'focus-transfer') validateFocus(action.focus);
@@ -207,6 +220,9 @@ export function compileSceneAction(action: SceneAction, context: CompileSceneAct
   } else if (action.primitive === 'object-handoff') {
     const offset = directionOffset(action.direction, 96);
     lines.push(`${timeline}.fromTo(${subject},{x:${offset.x},y:${offset.y},scale:.94,autoAlpha:0},{x:0,y:0,scale:1,autoAlpha:1,duration:${duration},ease:"power3.inOut",immediateRender:false},${start});`);
+  } else if (action.primitive === 'character-explain') {
+    if (!context.character) throw new Error('Character action compilation requires a stage');
+    lines.push(compileCharacterStage(context.character,context.sceneId,context.sceneStartFrame,context.fps,timeline));
   } else if (action.primitive === 'workflow-progress') {
     if (!context.workflow) throw new Error('workflow-progress requires a scene workflow');
     lines.push(compileWorkflowProgress(context.workflow, {
@@ -214,12 +230,14 @@ export function compileSceneAction(action: SceneAction, context: CompileSceneAct
       sceneStartFrame: context.sceneStartFrame,
       fps: context.fps,
       timelineName: timeline,
-      visualStyle: context.visualStyle,
+      visualStyle: context.visualStyle === 'sketch-v1' ? undefined : context.visualStyle,
     }));
   } else {
     lines.push(`${timeline}.set(${subject},{autoAlpha:1},${start});`);
   }
-  lines.push(`${timeline}.set(${subject},{visibility:"visible"},${holdEnd});`);
+  // Character visibility belongs to the scene and pose timeline. A final visibility set
+  // would capture inherited hidden state and reapply it when seeking back across scenes.
+  if (action.primitive !== 'character-explain') lines.push(`${timeline}.set(${subject},{visibility:"visible"},${holdEnd});`);
   return lines.join('\n');
 }
 

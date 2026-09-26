@@ -16,6 +16,8 @@ import { isActiveGeneratorPolicy } from '../quality/policy.ts';
 import { assertGeneratorSnapshot } from './generator.ts';
 import { loadQwenEvidence } from '../qa/qwen-narration.ts';
 import { narrationEvidenceContext } from './voice-reuse.ts';
+import { assertCharacterReview } from '../quality/character-review.ts';
+import type { RendererId } from './renderer.ts';
 
 export async function writeQa(project: string, spec: VideoSpec, checks: CheckResult[], warnings: string[] = []): Promise<string> {
   warnings = [...new Set([...warnings, ...checks.filter(c => c.id.includes('.warning.') || c.id.endsWith('.deprecation')).map(c => c.message)])];
@@ -27,6 +29,7 @@ export async function writeQa(project: string, spec: VideoSpec, checks: CheckRes
   return file;
 }
 export async function sourceChecks(project: string, spec: VideoSpec): Promise<CheckResult[]> {
+  await assertCharacterReview(path.resolve(project, '../..'), project, spec);
   const expectedPolicy = spec.generatorPolicy && !isActiveGeneratorPolicy(spec.generatorPolicy)
     ? await assertGeneratorSnapshot(project)
     : undefined;
@@ -153,5 +156,14 @@ export async function compositionQa(project: string, spec: VideoSpec): Promise<C
       await writeQa(project, spec, checks); throw new Error('Unreviewed HyperFrames validate warnings');
     }
   }
+  return checks;
+}
+
+export async function compositionQaForRenderer(project: string, spec: VideoSpec, renderer: RendererId): Promise<CheckResult[]> {
+  if (renderer === 'hyperframes') return compositionQa(project, spec);
+  const checks = await sourceChecks(project, spec);
+  checks.push({ id: 'remotion-composition', status: 'PASS', message: 'Remotion composition is selected; renderer-specific bundle and media checks run during render.' });
+  await writeQa(project, spec, checks);
+  if (checks.some(c => c.status === 'FAIL')) throw new Error('Source/input QA failed; see reports/qa-report.json');
   return checks;
 }

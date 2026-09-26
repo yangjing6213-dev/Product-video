@@ -14,6 +14,7 @@ The values in angle brackets are instructions to replace, not verified product f
 {
   "schemaVersion": "1.0",
   "projectId": "<lowercase-project-id>",
+  "renderMode": "hyperframes",
   "product": {
     "name": "<verified product name>",
     "url": "<credential-free public HTTP(S) product URL>",
@@ -96,11 +97,13 @@ The values in angle brackets are instructions to replace, not verified product f
 - Default capture uses the local HyperFrames `capture` command and automatically falls back to `supplied-assets` on failure. Pass `--supplied-only` to skip URL capture; the command fails if no usable licensed supplied visual exists.
 - `hyperframes` narration requires current voice-list evidence for the target locale. `external-audio` requires an authorized audio asset. `none` is a truthful silent path.
 - Input `output.quality` accepts `draft`, `standard`, or `high`, but the direct render command accepts only `--quality draft` and `--quality high`.
+- `renderMode` is optional for backward compatibility. Omit it for the HyperFrames + GSAP default, or set it to `remotion` for the pinned local Codex + Remotion mode. The CLI `--renderer` value must agree with an explicit frozen mode.
 
 ## Start and resume
 
 ```powershell
-npm run video -- init --input "C:\path with spaces\product-input.json"
+npm run video -- modes
+npm run video -- init --input "C:\path with spaces\product-input.json" --renderer hyperframes
 npm run video -- verify-input --project <projectId>
 npm run video -- capture --project <projectId> --supplied-only
 npm run video -- render --project <projectId> --quality draft

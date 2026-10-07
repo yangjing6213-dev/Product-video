@@ -5,6 +5,7 @@
 把零散的产品介绍、截图和素材，整理成一支讲清楚用途、展示使用过程的视频。
 
 [English](README.en.md) · [查看示例效果](#五示例效果) · [安装方法](#六安装方法) · [恩禾官网](https://www.enhe-tech.com.cn/)
+![产品视频工作室封面（英文版）](https://raw.githubusercontent.com/yangjing6213-dev/Product-video/main/docs/showcase/product-video-cover-en-v01.png)
 
 更新记录见 [CHANGELOG.md](CHANGELOG.md)。
 

@@ -11,12 +11,12 @@
 | value-review-before-production.png | 用户指定用于“具有什么价值？”的插图：先审稿再制作，减少返工 | `86a1561ef25db5dc225fa20d6760a94fd3013201fc6f4169dbcaf015653579c4` |
 | value-reuse-verified-work.png | 用户指定用于“具有什么价值？”的插图：先核验，未变复用，变动重做 | `fc629a7db2c2bef87a1188edab058965fe0b7a67d811b207c81833108e63982b` |
 | value-check-before-delivery.png | 用户指定用于“具有什么价值？”的插图：文件生成后继续验片，检查后交付 | `0a7c03127294914f7e9a46130eec4fa0156113d187e772a60d8682eb0a1d8f35` |
-| product-video-cover-en-v01.png | 用户指定置于中文版 README 顶部的英文版产品视频封面 | `C68CC42FF08015D452BFBE3AEC20FBCE79815FAED67B0C99DEF4038FE859CD87` |
-| product-video-cover-zh-v01.png | 用户指定置于英文版 README 顶部的中文版产品视频封面 | `707EF7BA0005D52482F86F9EC4219FE742D109176BB45B8964F89E001C44CC24` |
+| product-video-cover-en-v01.png | 用户指定置于英文版 README 顶部的英文版产品视频封面 | `C68CC42FF08015D452BFBE3AEC20FBCE79815FAED67B0C99DEF4038FE859CD87` |
+| product-video-cover-zh-v01.png | 用户指定置于中文版 README 顶部的中文版产品视频封面 | `707EF7BA0005D52482F86F9EC4219FE742D109176BB45B8964F89E001C44CC24` |
 
 四张价值插图由用户提供并明确授权在本仓库 README 展示，按原文件完整发布，没有重绘或压缩。它们沿用本目录的展示权利边界，图片中的角色不因此获得通用复用许可。
 
-两张产品视频封面由用户提供并明确授权在本仓库 README 顶部展示，按原文件发布，没有重绘或压缩。附件 1（英文版封面）置于中文版 README，附件 2（中文版封面）置于英文版 README。Apache-2.0 仅适用于原创代码、Skill 与技术文档；封面中的人物、品牌标识和其他视觉资产不因此获得通用复用许可。
+两张产品视频封面由用户提供并明确授权在对应语言 README 顶部展示：中文版 README 使用中文版封面，英文版 README 使用英文版封面。图片按原文件完整发布，没有重绘或压缩，沿用本目录的展示权利边界。
 
 ## 使用范围
 

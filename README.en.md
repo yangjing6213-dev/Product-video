@@ -5,7 +5,8 @@
 Turn scattered product notes, screenshots and assets into a video that explains what your product does and shows how it works.
 
 [中文](README.md) · [See the example](#5-example) · [Installation](#6-installation) · [ENHE website](https://www.enhe-tech.com.cn/)
-![Product Video Studio cover (Chinese version)](https://raw.githubusercontent.com/yangjing6213-dev/Product-video/main/docs/showcase/product-video-cover-zh-v01.png)
+
+![Product Video Studio cover (English version)](https://raw.githubusercontent.com/yangjing6213-dev/Product-video/main/docs/showcase/product-video-cover-en-v01.png)
 
 See [CHANGELOG.md](CHANGELOG.md) for update notes.
 
